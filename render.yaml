@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: istagoma-academic-api
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL_UNPOOLED
+        fromDatabase:
+          name: neondb
+          property: connectionString
+      - key: DATABASE_URL
+        fromDatabase:
+          name: neondb
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: LOG_LEVEL
+        value: debug
+
+databases:
+  - name: neondb
+    ipAllowList:
+      - key: allow-all
+        value: 0.0.0.0/0
