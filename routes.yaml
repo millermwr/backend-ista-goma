@@ -1,0 +1,18 @@
+# Render.com Routes Configuration
+# Définit les routes statiques et les redirections
+
+routes:
+  - source: "/api/*"
+    destination: "http://localhost:3000/api/$1"
+    permanent: false
+
+  - source: "/docs/*"
+    destination: "http://localhost:3000/docs/$1"
+    permanent: false
+
+  - source: "/"
+    destination: "http://localhost:3000/"
+    permanent: false
+
+# Les routes sont automatiquement gérées par le service Render
+# Aucune configuration supplémentaire requise si l'API s'exécute sur le port 3000
