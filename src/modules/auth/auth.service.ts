@@ -69,7 +69,7 @@ export class AuthService {
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: process.env.JWT_REFRESH_SECRET || 'refresh-secret',
         expiresIn: process.env.JWT_REFRESH_EXPIRATION || '7d',
       }),
       user: {
@@ -86,6 +86,10 @@ export class AuthService {
     const user = await this.usersRepository.findOne({
       where: { id: userId },
     });
+
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
 
     const payload = {
       id: user.id,
