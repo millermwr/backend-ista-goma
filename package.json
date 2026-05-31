@@ -6,7 +6,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "prebuild": "rm -rf dist",
+    "prebuild": "node -e \"const fs = require('fs'); const path = 'dist'; if (fs.existsSync(path)) { fs.rmSync(path, { recursive: true, force: true }); }\"",
     "build": "npx nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "npx nest start",
@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@nestjs/common": "^10.2.0",
+    "@nestjs/config": "^3.0.0",
     "@nestjs/core": "^10.2.0",
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^10.0.2",
