@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "prebuild": "node -e \"const fs = require('fs'); const path = 'dist'; if (fs.existsSync(path)) { fs.rmSync(path, { recursive: true, force: true }); }\"",
-    "build": "npx nest build",
+    "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "npx nest start",
     "start:dev": "npx nest start --watch",

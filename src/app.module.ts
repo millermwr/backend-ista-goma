@@ -27,7 +27,7 @@ import { ReportsModule } from './modules/reports/reports.module';
       database: process.env.DB_DATABASE,
       entities: ['dist/**/*.entity.js'],
       migrations: ['dist/database/migrations/*.js'],
-      migrationsRun: true,
+      migrationsRun: process.env.NODE_ENV === 'development',
       ssl: process.env.DB_SSL === 'true',
       synchronize: process.env.NODE_ENV === 'development',
       logging: process.env.LOG_LEVEL === 'debug',
