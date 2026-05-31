@@ -1,0 +1,143 @@
+🚀 RÉSUMÉ: DÉPLOYER VOTRE BACKEND SUR RENDER.COM
+================================================
+
+⏱️ DURÉE TOTALE: 15-20 minutes
+
+
+✅ PRÉREQUIS (vous avez déjà):
+────────────────────────────
+✓ Repository GitHub: https://github.com/millermwr/backend-ista-goma
+✓ Credentials Neon PostgreSQL (dans .env)
+✓ Backend compilable localement
+
+
+🎯 7 ÉTAPES SIMPLES:
+────────────────────
+
+1️⃣ GÉNÉRER JWT SECRETS (2 min)
+   Exécutez cette commande 2 fois:
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   
+   → Copiez les 2 résultats différents
+   → Secret 1 = JWT_SECRET
+   → Secret 2 = JWT_REFRESH_SECRET
+
+
+2️⃣ CRÉER COMPTE RENDER (2 min)
+   → Allez à: https://render.com
+   → Cliquez "Sign up"
+   → Connectez avec GitHub
+
+
+3️⃣ CRÉER WEB SERVICE (3 min)
+   → Dashboard: https://dashboard.render.com
+   → Cliquez "New +"
+   → Sélectionnez "Web Service"
+   → Cliquez "Connect a GitHub repository"
+   → Cherchez: "backend-ista-goma"
+   → Cliquez "Connect"
+
+
+4️⃣ CONFIGURER LE SERVICE (2 min)
+   Remplissez ces champs:
+   
+   Name:           istag-oma-backend
+   Environment:    Node
+   Region:         Oregon (US West)
+   Branch:         master
+   Build Command:  npm install && npm run build
+   Start Command:  npm run start:prod
+   Plan:           Free (ou Starter $7/mois)
+
+
+5️⃣ AJOUTER VARIABLES D'ENVIRONNEMENT (2 min)
+   Cliquez "Add Environment Variable" pour chaque:
+   
+   NODE_ENV           = production
+   JWT_SECRET         = [CLÉ_1_GÉNÉRÉE_À_L_ÉTAPE_1]
+   JWT_REFRESH_SECRET = [CLÉ_2_GÉNÉRÉE_À_L_ÉTAPE_1]
+   JWT_EXPIRATION     = 24h
+   JWT_REFRESH_EXPIRATION = 7d
+   
+   DATABASE_URL_UNPOOLED = postgresql://neondb_owner:npg_SlPUM8c7CbOD@ep-falling-frog-ap9vb20i.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+   DATABASE_URL = postgresql://neondb_owner:npg_SlPUM8c7CbOD@ep-falling-frog-ap9vb20i.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
+   
+   CORS_ORIGIN    = *
+   LOG_LEVEL      = info
+
+
+6️⃣ DÉPLOYER (10 min)
+   → Cliquez "Create Web Service"
+   → Attendez le build (regarde les logs en temps réel)
+   → Statut passe de "Building" → "Live"
+   → Copiez votre URL: https://istag-oma-backend.onrender.com
+
+
+7️⃣ VÉRIFIER LE DÉPLOIEMENT (2 min)
+   Test 1 - Health Check:
+   curl https://istag-oma-backend.onrender.com/api/health
+   → Résultat attendu: 200 OK
+   
+   Test 2 - Documentation:
+   https://istag-oma-backend.onrender.com/api/docs
+   → Doit afficher la Swagger documentation
+   
+   Test 3 - Login:
+   curl -X POST https://istag-oma-backend.onrender.com/api/auth/login \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@istagoma.ac.cd","password":"Admin@2024"}'
+   → Doit retourner JWT tokens
+
+
+⚙️ CONFIGURER VOS APPS (OPTIONNEL)
+───────────────────────────────────
+Pour que mobile/desktop utilisent votre API:
+
+Mobile (Gluon):
+  app-mobile-gluon/src/main/java/com/istagoma/config/ApiConfig.java
+  Cherchez: API_BASE_URL
+  Changez: "http://localhost:3000" → "https://istag-oma-backend.onrender.com"
+
+Desktop (JavaFX):
+  app-desktop-javafx/src/main/resources/config.properties
+  Cherchez: api.url
+  Changez: "http://localhost:3000" → "https://istag-oma-backend.onrender.com"
+
+Puis: mvn clean install && mvn javafx:run
+
+
+🔄 MISES À JOUR FUTURES
+──────────────────────
+Une fois déployé, chaque push GitHub redéploie automatiquement:
+  git add .
+  git commit -m "Feature: Add new endpoint"
+  git push origin master
+  → Render redéploie automatiquement (5-10 min)
+
+
+🔗 LIENS IMPORTANTS
+───────────────────
+Render Dashboard:       https://dashboard.render.com
+Votre API:             https://istag-oma-backend.onrender.com
+API Docs:              https://istag-oma-backend.onrender.com/api/docs
+GitHub Repo:           https://github.com/millermwr/backend-ista-goma
+Neon Console:          https://console.neon.tech
+Render Documentation:  https://render.com/docs
+
+
+⚠️ POINTS IMPORTANTS
+───────────────────
+1. Les JWT secrets DOIVENT être changés (pas les valeurs placeholder du .env)
+2. Ne commitez PAS les secrets dans Git (utilisez variables d'environnement Render)
+3. Le plan Free va s'arrêter après 15 min d'inactivité
+4. Upgrade à "Starter" ($7/mois) pour service toujours actif
+5. Neon a une limite gratuite - vérifiez votre usage
+
+
+❓ SI QUELQUE CHOSE ÉCHOUE
+──────────────────────────
+Consultez RENDER_DEPLOY_GUIDE.md pour la section Troubleshooting
+avec solutions pour erreurs courantes.
+
+
+✅ PRÊT? COMMENCEZ À L'ÉTAPE 1!
