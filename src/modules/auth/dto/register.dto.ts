@@ -1,4 +1,19 @@
-import { IsEmail, IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, MinLength, IsIn } from 'class-validator';
+
+// Rôles LMD RDC
+const USER_TYPES = [
+  'admin',
+  'direction',
+  'scolarite',
+  'inscription',
+  'notes',
+  'finance',
+  'rh',
+  'emploi_du_temps',
+  'attestations',
+  'professor',
+  'student'
+] as const;
 
 export class RegisterDto {
   @IsEmail()
@@ -16,5 +31,6 @@ export class RegisterDto {
   password: string;
 
   @IsNotEmpty()
+  @IsIn(USER_TYPES)
   userType: string;
 }
