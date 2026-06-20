@@ -2,17 +2,17 @@ import { IsEmail, IsNotEmpty, MinLength, IsIn } from 'class-validator';
 
 // Rôles LMD RDC
 const USER_TYPES = [
-  'admin',
-  'direction',
-  'scolarite',
-  'inscription',
-  'notes',
-  'finance',
-  'rh',
-  'emploi_du_temps',
-  'attestations',
-  'professor',
-  'student'
+  'ADMIN',
+  'DIRECTION',
+  'SCOLARITE',
+  'INSCRIPTION',
+  'NOTES',
+  'FINANCE',
+  'RH',
+  'EMPLOI_DU_TEMPS',
+  'ATTESTATIONS',
+  'PROFESSOR',
+  'STUDENT'
 ] as const;
 
 export class RegisterDto {
