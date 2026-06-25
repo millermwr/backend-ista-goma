@@ -95,19 +95,63 @@ export class PaymentsService {
     });
   }
 
-  async getStatutFinancier(studentId: string) {
-    const student = await this.studentRepository.findOne({
-      where: [{ id: studentId }, { matricule: studentId }]
-    });
+  async getStatutFinancier(studentId: string, anneeAcademique?: string) {
+    let student: Student | null = null;
+    if (anneeAcademique) {
+      student = await this.studentRepository.findOne({
+        where: [
+          { id: studentId, anneeAcademique },
+          { matricule: studentId, anneeAcademique }
+        ]
+      });
+    } else {
+      student = await this.studentRepository.findOne({
+        where: [
+          { id: studentId },
+          { matricule: studentId }
+        ],
+        order: { createdAt: 'DESC' }
+      });
+    }
+
     if (!student) {
       throw new NotFoundException(`Étudiant non trouvé`);
     }
+
+    const allPayments = await this.paymentRepository.find({
+      where: { etudiantId: student.id, statut: 'PAYE' }
+    });
+
+    const totalPaid = allPayments.reduce((acc, p) => acc + p.montant, 0);
+
+    // Standard fees per level
+    let totalFees = 500;
+    const niveauLower = student.niveau.toLowerCase();
+    if (niveauLower.includes('prép') || niveauLower.includes('prep')) {
+      totalFees = 400;
+    } else if (niveauLower.startsWith('l')) {
+      totalFees = 500;
+    } else if (niveauLower.startsWith('m')) {
+      totalFees = 800;
+    } else if (niveauLower.startsWith('d')) {
+      totalFees = 1200;
+    }
+
+    const remaining = totalFees - totalPaid;
+    const isEnRegle = remaining <= 0;
+
     return {
       studentId: student.id,
       matricule: student.matricule,
       nom: student.nom,
       prenom: student.prenom,
-      statutFinancier: student.statutFinancier
+      niveau: student.niveau,
+      anneeAcademique: student.anneeAcademique,
+      statutFinancier: student.statutFinancier,
+      totalPaid,
+      totalFees,
+      remaining: remaining < 0 ? 0 : remaining,
+      isEnRegle
     };
   }
 

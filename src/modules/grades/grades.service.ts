@@ -20,7 +20,7 @@ export class GradesService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  async findStudentGrades(studentIdOrMatricule: string) {
+  async findStudentGrades(studentIdOrMatricule: string, anneeAcademique?: string) {
     // 1. Find student
     const student = await this.studentRepository.findOne({
       where: [
@@ -41,9 +41,10 @@ export class GradesService {
       };
     }
 
-    // 3. Find published grades
+    // 3. Find published grades for specified academic year
+    const targetAnnee = anneeAcademique || student.anneeAcademique;
     const grades = await this.gradeRepository.find({
-      where: { etudiantId: student.id, estPublie: true },
+      where: { etudiantId: student.id, estPublie: true, anneeAcademique: targetAnnee },
       relations: ['course']
     });
 
@@ -55,9 +56,37 @@ export class GradesService {
       };
     }
 
+    // Calculate deliberation metrics
+    let average = 0;
+    let decision = 'EN_COURS';
+    let mentionDeliberation = 'Ajourné';
+    
+    if (grades.length > 0) {
+      const sum = grades.reduce((acc, g) => acc + g.noteFinale, 0);
+      average = sum / grades.length;
+      if (average >= 10) {
+        decision = 'RÉUSSI';
+        if (average >= 16) mentionDeliberation = 'Grande Distinction';
+        else if (average >= 14) mentionDeliberation = 'Distinction';
+        else mentionDeliberation = 'Satisfaction';
+      } else {
+        decision = 'ÉCHOUÉ';
+        mentionDeliberation = 'Ajourné';
+      }
+    }
+
     return {
       success: true,
       message: 'Accès autorisé',
+      studentName: `${student.prenom} ${student.nom}`,
+      matricule: student.matricule,
+      mention: student.mention,
+      niveau: student.niveau,
+      anneeAcademique: targetAnnee,
+      statutFinancier: student.statutFinancier,
+      average: Math.round(average * 100) / 100,
+      decision,
+      mentionDeliberation,
       data: grades.map(g => ({
         id: g.id,
         studentId: g.etudiantId,
@@ -73,7 +102,7 @@ export class GradesService {
     };
   }
 
-  async findCourseGrades(courseId: string, professorId?: string) {
+  async findCourseGrades(courseId: string, professorId?: string, anneeAcademique?: string) {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
       relations: ['enseignant']
@@ -86,15 +115,17 @@ export class GradesService {
       throw new ForbiddenException(`Vous n'êtes pas autorisé à accéder aux notes de ce cours.`);
     }
 
-    // Find all students enrolled in this course's mention and level
+    const targetAnnee = anneeAcademique || '2025-2026';
+
+    // Find all students enrolled in this course's mention, level, and specific academic year
     const students = await this.studentRepository.find({
-      where: { mention: course.mention, niveau: course.niveau },
+      where: { mention: course.mention, niveau: course.niveau, anneeAcademique: targetAnnee },
       order: { nom: 'ASC', prenom: 'ASC' }
     });
 
-    // Find all existing grades for this course
+    // Find all existing grades for this course and academic year
     const grades = await this.gradeRepository.find({
-      where: { coursId: course.id }
+      where: { coursId: course.id, anneeAcademique: targetAnnee }
     });
 
     return students.map(student => {
@@ -130,7 +161,7 @@ export class GradesService {
       }
 
       let grade = await this.gradeRepository.findOne({
-        where: { coursId: course.id, etudiantId: student.id }
+        where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique }
       });
 
       const noteFinale = entry.noteTP + entry.noteExamen;
@@ -158,7 +189,8 @@ export class GradesService {
           noteFinale,
           mention,
           estPublie: false,
-          session: dto.session
+          session: dto.session,
+          anneeAcademique: dto.anneeAcademique
         });
       }
 

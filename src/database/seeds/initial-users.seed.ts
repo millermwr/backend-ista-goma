@@ -21,8 +21,8 @@ export async function seedInitialData(dataSource: DataSource) {
   const directionPass = await bcrypt.hash('direction123', 10);
   const direction = userRepository.create({
     email: 'direction@istagoma.ac.cd',
-    firstName: 'Directeur',
-    lastName: 'Académique',
+    firstName: 'Chef de',
+    lastName: 'Section',
     passwordHash: directionPass,
     userType: 'DIRECTION',
     status: 'ACTIVE',
@@ -33,7 +33,7 @@ export async function seedInitialData(dataSource: DataSource) {
   const financePass = await bcrypt.hash('finance123', 10);
   const finance = userRepository.create({
     email: 'finance2@istagoma.ac.cd',
-    firstName: 'Chef',
+    firstName: 'Chef Service',
     lastName: 'Finances',
     passwordHash: financePass,
     userType: 'FINANCE',
@@ -80,6 +80,34 @@ export async function seedInitialData(dataSource: DataSource) {
     user: savedStudentUser,
   });
   await studentRepository.save(student);
+
+  // 4b. Create a Preparatory Student
+  const prepStudentPass = await bcrypt.hash('prep123', 10);
+  const prepStudentUser = userRepository.create({
+    email: 'ista-2026-0002@istagoma.ac.cd',
+    firstName: 'Bahati',
+    lastName: 'Musa',
+    passwordHash: prepStudentPass,
+    userType: 'STUDENT',
+    isTempPassword: false,
+    status: 'ACTIVE',
+  });
+  const savedPrepStudentUser = await userRepository.save(prepStudentUser);
+
+  const prepStudent = studentRepository.create({
+    matricule: 'ISTA-2026-0002',
+    nom: 'Bahati',
+    prenom: 'Musa',
+    email: 'musa.bahati@istagoma.ac.cd',
+    mention: 'Informatique',
+    section: 'Sciences Informatiques',
+    niveau: 'Préparatoire',
+    anneeAcademique: '2025-2026',
+    statutFinancier: 'PAYE',
+    motDePasseTemporaire: 'prep123',
+    user: savedPrepStudentUser,
+  });
+  await studentRepository.save(prepStudent);
 
   // 5. Seed some initial courses for test
   const coursesData = [

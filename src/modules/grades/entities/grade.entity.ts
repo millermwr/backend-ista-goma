@@ -50,6 +50,9 @@ export class Grade {
   @Column()
   session: string;
 
+  @Column({ default: '2025-2026' })
+  anneeAcademique: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

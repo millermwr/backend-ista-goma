@@ -28,6 +28,10 @@ export class SaisirCotesDto {
   @IsString()
   session: string;
 
+  @IsNotEmpty()
+  @IsString()
+  anneeAcademique: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GradeEntryDto)

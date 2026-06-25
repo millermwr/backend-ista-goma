@@ -16,16 +16,20 @@ export class GradesController {
   @Get('student/:studentId')
   @Roles('DIRECTION', 'FINANCE', 'STUDENT')
   @ApiOperation({ summary: 'Get student grades with financial and administrative validation (double-lock)' })
-  async findStudentGrades(@Param('studentId') studentId: string) {
-    return this.gradesService.findStudentGrades(studentId);
+  async findStudentGrades(@Param('studentId') studentId: string, @Query('anneeAcademique') anneeAcademique?: string) {
+    return this.gradesService.findStudentGrades(studentId, anneeAcademique);
   }
 
   @Get('course/:courseId')
   @Roles('DIRECTION', 'PROFESSOR')
   @ApiOperation({ summary: 'Get all grades for a specific course (for professors)' })
-  async findCourseGrades(@Param('courseId') courseId: string, @Request() req) {
+  async findCourseGrades(
+    @Param('courseId') courseId: string,
+    @Query('anneeAcademique') anneeAcademique?: string,
+    @Request() req = null
+  ) {
     const isProfessor = req.user.userType === 'PROFESSOR';
-    return this.gradesService.findCourseGrades(courseId, isProfessor ? req.user.id : undefined);
+    return this.gradesService.findCourseGrades(courseId, isProfessor ? req.user.id : undefined, anneeAcademique);
   }
 
   @Get('suivi')

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -33,8 +33,8 @@ export class PaymentsController {
   @Roles('DIRECTION', 'FINANCE', 'STUDENT')
   @ApiOperation({ summary: 'Get student financial status' })
   @ApiResponse({ status: 200, description: 'Returns financial status details' })
-  async getStatutFinancier(@Param('studentId') studentId: string) {
-    return this.paymentsService.getStatutFinancier(studentId);
+  async getStatutFinancier(@Param('studentId') studentId: string, @Query('anneeAcademique') anneeAcademique?: string) {
+    return this.paymentsService.getStatutFinancier(studentId, anneeAcademique);
   }
 
   @Get(':id')
