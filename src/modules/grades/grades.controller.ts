@@ -33,8 +33,8 @@ export class GradesController {
   }
 
   @Get('suivi')
-  @Roles('DIRECTION')
-  @ApiOperation({ summary: 'Get encoding progress for courses (for Direction)' })
+  @Roles('DIRECTION', 'PROFESSOR')
+  @ApiOperation({ summary: 'Get encoding progress for courses (for Direction & Professors)' })
   async getSuivi(@Query('mention') mention?: string) {
     return this.gradesService.getSuiviEncodage(mention);
   }
