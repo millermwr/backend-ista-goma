@@ -2,9 +2,19 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { DataSource } from 'typeorm';
+import { seedInitialData } from './database/seeds/initial-users.seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Run database seeding
+  try {
+    const dataSource = app.get(DataSource);
+    await seedInitialData(dataSource);
+  } catch (error) {
+    console.error('❌ Failed to run database seed:', error);
+  }
 
   // CORS Configuration
   app.enableCors({

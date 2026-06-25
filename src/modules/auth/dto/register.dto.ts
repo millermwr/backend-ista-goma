@@ -2,15 +2,8 @@ import { IsEmail, IsNotEmpty, MinLength, IsIn } from 'class-validator';
 
 // Rôles LMD RDC
 const USER_TYPES = [
-  'ADMIN',
   'DIRECTION',
-  'SCOLARITE',
-  'INSCRIPTION',
-  'NOTES',
   'FINANCE',
-  'RH',
-  'EMPLOI_DU_TEMPS',
-  'ATTESTATIONS',
   'PROFESSOR',
   'STUDENT'
 ] as const;

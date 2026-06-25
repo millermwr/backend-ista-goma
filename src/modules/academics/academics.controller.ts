@@ -1,84 +1,73 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, Request, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { AcademicsService } from './academics.service';
+import { CreateCourseDto } from './dto/create-course.dto';
 
 @ApiTags('Academics')
+@ApiBearerAuth()
 @Controller('api/v1/academics')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AcademicsController {
-  @Get()
-  @ApiOperation({ summary: 'Get all academic programs' })
-  @ApiResponse({ status: 200, description: 'Returns list of academic programs' })
-  async findAll() {
-    return {
-      data: [
-        {
-          id: '1',
-          name: 'Licence Informatique',
-          code: 'L-INF',
-          duration: 3,
-          description: 'Programme de licence en informatique',
-          status: 'ACTIVE'
-        },
-        {
-          id: '2',
-          name: 'Master Gestion',
-          code: 'M-GEST',
-          duration: 2,
-          description: 'Programme de master en gestion',
-          status: 'ACTIVE'
-        }
-      ],
-      total: 2
-    };
+  constructor(private readonly academicsService: AcademicsService) {}
+
+  @Get('courses')
+  @Roles('DIRECTION', 'FINANCE', 'PROFESSOR', 'STUDENT')
+  @ApiOperation({ summary: 'Get all courses' })
+  async findCourses(
+    @Query('mention') mention?: string,
+    @Query('niveau') niveau?: string,
+    @Query('section') section?: string,
+  ) {
+    return this.academicsService.findAll(mention, niveau, section);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get academic program by ID' })
-  @ApiResponse({ status: 200, description: 'Returns academic program details' })
-  async findOne(@Param('id') id: string) {
-    return {
-      id: id,
-      name: 'Licence Informatique',
-      code: 'L-INF',
-      duration: 3,
-      description: 'Programme de licence en informatique',
-      status: 'ACTIVE'
-    };
+  @Get('mes-cours')
+  @Roles('PROFESSOR')
+  @ApiOperation({ summary: 'Get courses assigned to the current professor' })
+  async findMesCours(@Request() req) {
+    return this.academicsService.findMesCours(req.user.id);
   }
 
-  @Post()
+  @Get('professors')
+  @Roles('DIRECTION')
+  @ApiOperation({ summary: 'Get list of active professors' })
+  async findProfessors() {
+    return this.academicsService.findProfessors();
+  }
+
+  @Get('courses/:id')
+  @Roles('DIRECTION', 'PROFESSOR')
+  @ApiOperation({ summary: 'Get course details by ID' })
+  async findOneCourse(@Param('id') id: string) {
+    return this.academicsService.findOne(id);
+  }
+
+  @Post('courses')
+  @Roles('DIRECTION')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create new academic program' })
-  @ApiResponse({ status: 201, description: 'Academic program created successfully' })
-  async create(@Body() createAcademicDto: any) {
-    return {
-      message: 'Academic program created successfully',
-      data: {
-        id: '3',
-        ...createAcademicDto
-      }
-    };
+  @ApiOperation({ summary: 'Create a new course' })
+  async createCourse(@Body() createCourseDto: CreateCourseDto) {
+    return this.academicsService.create(createCourseDto);
   }
 
-  @Put(':id')
-  @ApiOperation({ summary: 'Update academic program' })
-  @ApiResponse({ status: 200, description: 'Academic program updated successfully' })
-  async update(@Param('id') id: string, @Body() updateAcademicDto: any) {
-    return {
-      message: 'Academic program updated successfully',
-      data: {
-        id: id,
-        ...updateAcademicDto
-      }
-    };
+  @Post('courses/:courseId/assign')
+  @Roles('DIRECTION')
+  @ApiOperation({ summary: 'Assign a professor to a course' })
+  async assignProfessor(
+    @Param('courseId') courseId: string,
+    @Body('enseignantId') enseignantId: string | null,
+  ) {
+    return this.academicsService.assignProfessor(courseId, enseignantId);
   }
 
-  @Delete(':id')
+  @Delete('courses/:id')
+  @Roles('DIRECTION')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete academic program' })
-  @ApiResponse({ status: 204, description: 'Academic program deleted successfully' })
-  async delete(@Param('id') id: string) {
-    return;
+  @ApiOperation({ summary: 'Delete a course' })
+  async deleteCourse(@Param('id') id: string) {
+    return this.academicsService.remove(id);
   }
 }

@@ -1,90 +1,69 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { StudentsService } from './students.service';
+import { CreateStudentDto } from './dto/create-student.dto';
 
 @ApiTags('Students')
+@ApiBearerAuth()
 @Controller('api/v1/students')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentsController {
+  constructor(private readonly studentsService: StudentsService) {}
+
   @Get()
+  @Roles('DIRECTION', 'FINANCE')
   @ApiOperation({ summary: 'Get all students' })
   @ApiResponse({ status: 200, description: 'Returns list of students' })
-  async findAll() {
-    return {
-      data: [
-        {
-          id: '1',
-          firstName: 'Jean',
-          lastName: 'Mutombo',
-          email: 'jean.mutombo@istagoma.ac.cd',
-          studentId: 'STU001',
-          program: 'Licence Informatique',
-          year: 2,
-          status: 'ACTIVE'
-        },
-        {
-          id: '2',
-          firstName: 'Marie',
-          lastName: 'Kabongo',
-          email: 'marie.kabongo@istagoma.ac.cd',
-          studentId: 'STU002',
-          program: 'Master Gestion',
-          year: 1,
-          status: 'ACTIVE'
-        }
-      ],
-      total: 2
-    };
+  async findAll(
+    @Query('mention') mention?: string,
+    @Query('niveau') niveau?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.studentsService.findAll(mention, niveau, search);
+  }
+
+  @Get('matricule/:matricule')
+  @Roles('DIRECTION', 'FINANCE', 'PROFESSOR', 'STUDENT')
+  @ApiOperation({ summary: 'Get student by matricule' })
+  @ApiResponse({ status: 200, description: 'Returns student details' })
+  async findByMatricule(@Param('matricule') matricule: string) {
+    return this.studentsService.findByMatricule(matricule);
   }
 
   @Get(':id')
+  @Roles('DIRECTION', 'FINANCE', 'STUDENT')
   @ApiOperation({ summary: 'Get student by ID' })
   @ApiResponse({ status: 200, description: 'Returns student details' })
   async findOne(@Param('id') id: string) {
-    return {
-      id: id,
-      firstName: 'Jean',
-      lastName: 'Mutombo',
-      email: 'jean.mutombo@istagoma.ac.cd',
-      studentId: 'STU001',
-      program: 'Licence Informatique',
-      year: 2,
-      status: 'ACTIVE'
-    };
+    return this.studentsService.findOne(id);
   }
 
   @Post()
+  @Roles('FINANCE')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create new student' })
+  @ApiOperation({ summary: 'Create (inscrire) new student' })
   @ApiResponse({ status: 201, description: 'Student created successfully' })
-  async create(@Body() createStudentDto: any) {
-    return {
-      message: 'Student created successfully',
-      data: {
-        id: '3',
-        ...createStudentDto
-      }
-    };
+  async create(@Body() createStudentDto: CreateStudentDto) {
+    return this.studentsService.create(createStudentDto);
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update student' })
+  @Roles('FINANCE', 'DIRECTION')
+  @ApiOperation({ summary: 'Update student information' })
   @ApiResponse({ status: 200, description: 'Student updated successfully' })
   async update(@Param('id') id: string, @Body() updateStudentDto: any) {
-    return {
-      message: 'Student updated successfully',
-      data: {
-        id: id,
-        ...updateStudentDto
-      }
-    };
+    return this.studentsService.update(id, updateStudentDto);
   }
 
   @Delete(':id')
+  @Roles('DIRECTION')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete student' })
   @ApiResponse({ status: 204, description: 'Student deleted successfully' })
   async delete(@Param('id') id: string) {
-    return;
+    return this.studentsService.remove(id);
   }
 }

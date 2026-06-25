@@ -9,8 +9,6 @@ import { StudentsModule } from './modules/students/students.module';
 import { AcademicsModule } from './modules/academics/academics.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { GradesModule } from './modules/grades/grades.module';
-import { EmployeesModule } from './modules/employees/employees.module';
-import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
@@ -38,8 +36,6 @@ import { ReportsModule } from './modules/reports/reports.module';
     AcademicsModule,
     PaymentsModule,
     GradesModule,
-    EmployeesModule,
-    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

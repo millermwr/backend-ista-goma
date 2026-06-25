@@ -1,6 +1,230 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Grade } from './entities/grade.entity';
+import { Student } from '../students/entities/student.entity';
+import { Course } from '../academics/entities/course.entity';
+import { User } from '../users/entities/user.entity';
+import { SaisirCotesDto } from './dto/saisir-cotes.dto';
 
 @Injectable()
 export class GradesService {
-  // TODO: Implement grade management (grades entry, calculation, transcripts)
+  constructor(
+    @InjectRepository(Grade)
+    private readonly gradeRepository: Repository<Grade>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
+    @InjectRepository(Course)
+    private readonly courseRepository: Repository<Course>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+  ) {}
+
+  async findStudentGrades(studentIdOrMatricule: string) {
+    // 1. Find student
+    const student = await this.studentRepository.findOne({
+      where: [
+        { id: studentIdOrMatricule },
+        { matricule: studentIdOrMatricule }
+      ]
+    });
+    if (!student) {
+      throw new NotFoundException(`Étudiant non trouvé`);
+    }
+
+    // 2. Check financial status
+    if (student.statutFinancier !== 'PAYE') {
+      return {
+        success: false,
+        message: 'Accès refusé : Veuillez régulariser vos frais à la comptabilité',
+        code: 'FINANCIAL_BLOCK'
+      };
+    }
+
+    // 3. Find published grades
+    const grades = await this.gradeRepository.find({
+      where: { etudiantId: student.id, estPublie: true },
+      relations: ['course']
+    });
+
+    if (grades.length === 0) {
+      return {
+        success: false,
+        message: 'Résultats non encore disponibles : Délibération en cours au niveau de la section',
+        code: 'ADMINISTRATIVE_BLOCK'
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Accès autorisé',
+      data: grades.map(g => ({
+        id: g.id,
+        studentId: g.etudiantId,
+        courseId: g.coursId,
+        courseName: g.nomCours,
+        tpGrade: g.noteTP,
+        examGrade: g.noteExamen,
+        finalGrade: g.noteFinale,
+        mention: g.mention,
+        session: g.session,
+        status: 'PUBLISHED'
+      }))
+    };
+  }
+
+  async findCourseGrades(courseId: string, professorId?: string) {
+    const course = await this.courseRepository.findOne({
+      where: { id: courseId },
+      relations: ['enseignant']
+    });
+    if (!course) {
+      throw new NotFoundException(`Cours non trouvé`);
+    }
+
+    if (professorId && course.enseignantId !== professorId) {
+      throw new ForbiddenException(`Vous n'êtes pas autorisé à accéder aux notes de ce cours.`);
+    }
+
+    // Find all students enrolled in this course's mention and level
+    const students = await this.studentRepository.find({
+      where: { mention: course.mention, niveau: course.niveau },
+      order: { nom: 'ASC', prenom: 'ASC' }
+    });
+
+    // Find all existing grades for this course
+    const grades = await this.gradeRepository.find({
+      where: { coursId: course.id }
+    });
+
+    return students.map(student => {
+      const grade = grades.find(g => g.etudiantId === student.id);
+      return {
+        id: grade?.id || null,
+        studentId: student.id,
+        studentName: `${student.prenom} ${student.nom}`,
+        matricule: student.matricule,
+        tpGrade: grade?.noteTP ?? 0,
+        examGrade: grade?.noteExamen ?? 0,
+        finalGrade: grade?.noteFinale ?? 0,
+        mention: grade?.mention ?? 'EC',
+        status: grade ? (grade.estPublie ? 'PUBLISHED' : 'ENCODED') : 'NOT_ENCODED'
+      };
+    });
+  }
+
+  async saisirCotes(dto: SaisirCotesDto, professorId?: string) {
+    const course = await this.courseRepository.findOne({ where: { id: dto.coursId } });
+    if (!course) {
+      throw new NotFoundException(`Cours non trouvé`);
+    }
+
+    if (professorId && course.enseignantId !== professorId) {
+      throw new ForbiddenException(`Vous n'êtes pas autorisé à encoder les notes de ce cours.`);
+    }
+
+    for (const entry of dto.grades) {
+      const student = await this.studentRepository.findOne({ where: { id: entry.etudiantId } });
+      if (!student) {
+        throw new NotFoundException(`Étudiant avec l'ID ${entry.etudiantId} non trouvé`);
+      }
+
+      let grade = await this.gradeRepository.findOne({
+        where: { coursId: course.id, etudiantId: student.id }
+      });
+
+      const noteFinale = entry.noteTP + entry.noteExamen;
+      let mention = 'EC';
+      if (noteFinale >= 16) mention = 'TB';
+      else if (noteFinale >= 14) mention = 'B';
+      else if (noteFinale >= 12) mention = 'AB';
+      else if (noteFinale >= 10) mention = 'P';
+
+      if (grade) {
+        grade.noteTP = entry.noteTP;
+        grade.noteExamen = entry.noteExamen;
+        grade.noteFinale = noteFinale;
+        grade.mention = mention;
+        grade.estPublie = false; // Reset publication status on change
+        if (professorId) grade.enseignantId = professorId;
+      } else {
+        grade = this.gradeRepository.create({
+          coursId: course.id,
+          nomCours: course.nom,
+          etudiantId: student.id,
+          enseignantId: professorId || course.enseignantId,
+          noteTP: entry.noteTP,
+          noteExamen: entry.noteExamen,
+          noteFinale,
+          mention,
+          estPublie: false,
+          session: dto.session
+        });
+      }
+
+      await this.gradeRepository.save(grade);
+    }
+
+    return { message: 'Cotes enregistrées avec succès' };
+  }
+
+  async publierCotes(mention: string, session: string) {
+    // Find all students of this mention
+    const students = await this.studentRepository.find({ where: { mention } });
+    if (students.length === 0) {
+      return { message: `Aucun étudiant trouvé pour la mention ${mention}` };
+    }
+
+    const studentIds = students.map(s => s.id);
+
+    // Update all grades for these students in this session
+    await this.gradeRepository.createQueryBuilder()
+      .update(Grade)
+      .set({ estPublie: true })
+      .where('etudiantId IN (:...studentIds)', { studentIds })
+      .andWhere('session = :session', { session })
+      .execute();
+
+    return { message: `Cotes de la mention ${mention} (session ${session}) publiées avec succès` };
+  }
+
+  async getSuiviEncodage(mention?: string) {
+    const where: any = {};
+    if (mention) where.mention = mention;
+
+    const courses = await this.courseRepository.find({
+      where,
+      relations: ['enseignant']
+    });
+
+    const results: any[] = [];
+    for (const course of courses) {
+      const studentsCount = await this.studentRepository.count({
+        where: { mention: course.mention, niveau: course.niveau }
+      });
+
+      const gradesCount = await this.gradeRepository.count({
+        where: { coursId: course.id }
+      });
+
+      const publishedCount = await this.gradeRepository.count({
+        where: { coursId: course.id, estPublie: true }
+      });
+
+      results.push({
+        courseId: course.id,
+        courseCode: course.code,
+        courseName: course.nom,
+        mention: course.mention,
+        niveau: course.niveau,
+        professorName: course.enseignant ? `${course.enseignant.firstName} ${course.enseignant.lastName}` : 'Non assigné',
+        studentsCount,
+        gradedCount: gradesCount,
+        publishedCount,
+        progress: studentsCount > 0 ? Math.round((gradesCount / studentsCount) * 100) : 0
+      });
+    }
+
+    return results;
+  }
 }

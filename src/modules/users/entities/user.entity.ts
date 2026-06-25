@@ -30,9 +30,12 @@ export class User {
   @Column({ default: 'ACTIVE' })
   status: string; // ACTIVE, INACTIVE, SUSPENDED, DELETED
 
+  @Column({ default: false })
+  isTempPassword: boolean;
+
   @Column({
     type: 'enum',
-    enum: ['ADMIN', 'DIRECTION', 'SCOLARITE', 'INSCRIPTION', 'NOTES', 'FINANCE', 'RH', 'EMPLOI_DU_TEMPS', 'ATTESTATIONS', 'PROFESSOR', 'STUDENT'],
+    enum: ['DIRECTION', 'FINANCE', 'PROFESSOR', 'STUDENT'],
     default: 'STUDENT',
   })
   userType: string;
