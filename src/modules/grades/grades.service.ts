@@ -164,7 +164,7 @@ export class GradesService {
         where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique }
       });
 
-      const noteFinale = entry.noteTP + entry.noteExamen;
+      const noteFinale = entry.noteTP + entry.noteExamen + (entry.notePresence || 0);
       let mention = 'EC';
       if (noteFinale >= 16) mention = 'TB';
       else if (noteFinale >= 14) mention = 'B';
@@ -174,9 +174,11 @@ export class GradesService {
       if (grade) {
         grade.noteTP = entry.noteTP;
         grade.noteExamen = entry.noteExamen;
+        grade.notePresence = entry.notePresence || 0;
         grade.noteFinale = noteFinale;
         grade.mention = mention;
         grade.estPublie = false; // Reset publication status on change
+        grade.estSoumis = false; // Reset submission status on change
         if (professorId) grade.enseignantId = professorId;
       } else {
         grade = this.gradeRepository.create({
@@ -186,9 +188,11 @@ export class GradesService {
           enseignantId: professorId || course.enseignantId,
           noteTP: entry.noteTP,
           noteExamen: entry.noteExamen,
+          notePresence: entry.notePresence || 0,
           noteFinale,
           mention,
           estPublie: false,
+          estSoumis: false,
           session: dto.session,
           anneeAcademique: dto.anneeAcademique
         });
@@ -200,24 +204,36 @@ export class GradesService {
     return { message: 'Cotes enregistrées avec succès' };
   }
 
-  async publierCotes(mention: string, session: string) {
-    // Find all students of this mention
-    const students = await this.studentRepository.find({ where: { mention } });
-    if (students.length === 0) {
-      return { message: `Aucun étudiant trouvé pour la mention ${mention}` };
+  async soumettreCotes(coursId: string, anneeAcademique: string, session: string) {
+    const grades = await this.gradeRepository.find({
+      where: { coursId, anneeAcademique, session }
+    });
+    if (grades.length === 0) {
+      throw new NotFoundException(`Aucune cote trouvée pour ce cours, cette année et cette session`);
+    }
+    for (const grade of grades) {
+      grade.estSoumis = true;
+      await this.gradeRepository.save(grade);
+    }
+    return { message: 'Cotes soumises pour validation avec succès' };
+  }
+
+  async publierCotes(coursId: string, session: string) {
+    // Find the course
+    const course = await this.courseRepository.findOne({ where: { id: coursId } });
+    if (!course) {
+      throw new NotFoundException(`Cours avec l'ID ${coursId} non trouvé`);
     }
 
-    const studentIds = students.map(s => s.id);
-
-    // Update all grades for these students in this session
+    // Update all grades for this course in this session to published and submitted
     await this.gradeRepository.createQueryBuilder()
       .update(Grade)
-      .set({ estPublie: true })
-      .where('etudiantId IN (:...studentIds)', { studentIds })
+      .set({ estPublie: true, estSoumis: true })
+      .where('coursId = :coursId', { coursId })
       .andWhere('session = :session', { session })
       .execute();
 
-    return { message: `Cotes de la mention ${mention} (session ${session}) publiées avec succès` };
+    return { message: `Cotes du cours ${course.nom} (session ${session}) publiées avec succès` };
   }
 
   async getSuiviEncodage(mention?: string) {

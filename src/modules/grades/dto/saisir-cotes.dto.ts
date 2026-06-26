@@ -17,6 +17,11 @@ export class GradeEntryDto {
   @Min(0)
   @Max(20)
   noteExamen: number;
+
+  @IsNumber()
+  @Min(0)
+  @Max(20)
+  notePresence?: number;
 }
 
 export class SaisirCotesDto {

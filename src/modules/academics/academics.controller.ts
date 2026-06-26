@@ -70,4 +70,32 @@ export class AcademicsController {
   async deleteCourse(@Param('id') id: string) {
     return this.academicsService.remove(id);
   }
+
+  @Post('schedules')
+  @Roles('DIRECTION')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Create a weekly course schedule' })
+  async createSchedule(@Body() dto: any) {
+    return this.academicsService.createSchedule(dto);
+  }
+
+  @Get('schedules')
+  @Roles('DIRECTION', 'PROFESSOR', 'STUDENT')
+  @ApiOperation({ summary: 'Get course schedules' })
+  async findSchedules(
+    @Query('anneeAcademique') anneeAcademique?: string,
+    @Query('semaineDebut') semaineDebut?: string,
+    @Query('mention') mention?: string,
+    @Query('niveau') niveau?: string,
+  ) {
+    return this.academicsService.findSchedules(anneeAcademique, semaineDebut, mention, niveau);
+  }
+
+  @Delete('schedules/:id')
+  @Roles('DIRECTION')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete a weekly course schedule' })
+  async deleteSchedule(@Param('id') id: string) {
+    return this.academicsService.deleteSchedule(id);
+  }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -17,8 +17,12 @@ export class PaymentsController {
   @Roles('DIRECTION', 'FINANCE')
   @ApiOperation({ summary: 'Get all payments' })
   @ApiResponse({ status: 200, description: 'Returns list of payments' })
-  async findAll() {
-    return this.paymentsService.findAll();
+  async findAll(
+    @Query('anneeAcademique') anneeAcademique?: string,
+    @Query('mention') mention?: string,
+    @Query('niveau') niveau?: string,
+  ) {
+    return this.paymentsService.findAll(anneeAcademique, mention, niveau);
   }
 
   @Get('student/:studentId')
@@ -27,6 +31,14 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Returns list of payments' })
   async findByStudent(@Param('studentId') studentId: string) {
     return this.paymentsService.findByStudent(studentId);
+  }
+
+  @Get('reference/:reference')
+  @Roles('DIRECTION', 'FINANCE')
+  @ApiOperation({ summary: 'Get payment details by reference' })
+  @ApiResponse({ status: 200, description: 'Returns payment details' })
+  async findByReference(@Param('reference') reference: string) {
+    return this.paymentsService.findByReference(reference);
   }
 
   @Get('statut/:studentId')
@@ -52,6 +64,14 @@ export class PaymentsController {
   @ApiResponse({ status: 201, description: 'Payment recorded successfully' })
   async create(@Body() createPaymentDto: CreatePaymentDto) {
     return this.paymentsService.create(createPaymentDto);
+  }
+
+  @Put(':id')
+  @Roles('FINANCE')
+  @ApiOperation({ summary: 'Modify an existing payment' })
+  @ApiResponse({ status: 200, description: 'Payment modified successfully' })
+  async update(@Param('id') id: string, @Body() updateDto: any) {
+    return this.paymentsService.update(id, updateDto);
   }
 
   @Delete(':id')

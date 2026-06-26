@@ -69,7 +69,7 @@ export class StudentsService {
     return this.studentRepository.save(student);
   }
 
-  async findAll(mention?: string, niveau?: string, search?: string) {
+  async findAll(mention?: string, niveau?: string, search?: string, anneeAcademique?: string) {
     const queryBuilder = this.studentRepository.createQueryBuilder('student')
       .leftJoinAndSelect('student.user', 'user');
 
@@ -81,9 +81,13 @@ export class StudentsService {
       queryBuilder.andWhere('student.niveau = :niveau', { niveau });
     }
 
+    if (anneeAcademique) {
+      queryBuilder.andWhere('student.anneeAcademique = :anneeAcademique', { anneeAcademique });
+    }
+
     if (search) {
       queryBuilder.andWhere(
-        '(student.nom ILIKE :search OR student.prenom ILIKE :search OR student.matricule ILIKE :search)',
+        '(student.nom ILIKE :search OR student.prenom ILIKE :search OR student.matricule ILIKE :search OR student.postnom ILIKE :search)',
         { search: `%${search}%` }
       );
     }
@@ -134,5 +138,23 @@ export class StudentsService {
     // Delete student, cascade will delete user
     await this.studentRepository.remove(student);
     return { message: 'Étudiant supprimé avec succès' };
+  }
+
+  async getAcademicYears() {
+    const results = await this.studentRepository
+      .createQueryBuilder('student')
+      .select('DISTINCT student.anneeAcademique', 'anneeAcademique')
+      .getRawMany();
+    
+    const years = results.map(r => r.anneeAcademique).filter(Boolean);
+    
+    const defaults = ['2025-2026', '2026-2027'];
+    defaults.forEach(d => {
+      if (!years.includes(d)) {
+        years.push(d);
+      }
+    });
+    
+    return years.sort();
   }
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsIn } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsNotEmpty()
@@ -11,10 +11,9 @@ export class CreatePaymentDto {
 
   @IsNotEmpty()
   @IsString()
-  @IsIn(['INSCRIPTION', 'TRANCHE_1', 'TRANCHE_2', 'SOLDE'])
   typePaiement: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  reference: string;
+  reference?: string;
 }

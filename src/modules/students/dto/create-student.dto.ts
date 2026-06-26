@@ -5,6 +5,10 @@ export class CreateStudentDto {
   @IsString()
   nom: string;
 
+  @IsOptional()
+  @IsString()
+  postnom?: string;
+
   @IsNotEmpty()
   @IsString()
   prenom: string;

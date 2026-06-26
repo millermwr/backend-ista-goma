@@ -14,6 +14,57 @@ export class PaymentsService {
     private readonly studentRepository: Repository<Student>,
   ) {}
 
+  private getStudentTotalFees(niveau: string): number {
+    let totalFees = 395; // Default for L1/L2
+    const niveauLower = (niveau || '').toLowerCase().trim();
+    if (niveauLower.includes('l0') || niveauLower.includes('prép') || niveauLower.includes('prep')) {
+      totalFees = 355;
+    } else if (niveauLower.includes('l1') || niveauLower.includes('l2')) {
+      totalFees = 395;
+    } else if (niveauLower.includes('l3')) {
+      totalFees = 566;
+    } else if (niveauLower.includes('m1') || niveauLower.includes('doctorat 1') || niveauLower.includes('doctorat1') || niveauLower.includes('d1')) {
+      totalFees = 655;
+    } else if (niveauLower.includes('m2') || niveauLower.includes('doctorat 2') || niveauLower.includes('doctorat2') || niveauLower.includes('d2')) {
+      totalFees = 1275;
+    }
+    return totalFees;
+  }
+
+  private generateReference(): string {
+    const date = new Date();
+    const yyyy = date.getFullYear().toString();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const min = String(date.getMinutes()).padStart(2, '0');
+    const ss = String(date.getSeconds()).padStart(2, '0');
+    const rand = Math.floor(1000 + Math.random() * 9000).toString();
+    return `REF-${yyyy}${mm}${dd}-${hh}${min}${ss}-${rand}`;
+  }
+
+  async recalculateStudentFinancialStatus(studentId: string) {
+    const student = await this.studentRepository.findOne({ where: { id: studentId } });
+    if (!student) return;
+
+    const allPayments = await this.paymentRepository.find({
+      where: { etudiantId: student.id, statut: 'PAYE' }
+    });
+
+    const totalPaid = allPayments.reduce((acc, p) => acc + p.montant, 0);
+    const totalFees = this.getStudentTotalFees(student.niveau);
+
+    if (totalPaid >= totalFees) {
+      student.statutFinancier = 'PAYE';
+    } else if (totalPaid > 0) {
+      student.statutFinancier = 'PARTIEL';
+    } else {
+      student.statutFinancier = 'IMPAYE';
+    }
+
+    await this.studentRepository.save(student);
+  }
+
   async create(createPaymentDto: CreatePaymentDto) {
     // 1. Find student
     const student = await this.studentRepository.findOne({
@@ -26,49 +77,50 @@ export class PaymentsService {
       throw new NotFoundException(`Étudiant avec l'identifiant ${createPaymentDto.etudiantId} non trouvé`);
     }
 
-    // 2. Check reference
-    const existingPayment = await this.paymentRepository.findOne({
-      where: { reference: createPaymentDto.reference }
-    });
-    if (existingPayment) {
-      throw new ConflictException(`Un paiement avec la référence ${createPaymentDto.reference} existe déjà`);
+    // 2. Generate or verify reference
+    let reference = createPaymentDto.reference;
+    if (!reference || reference.trim() === '') {
+      reference = this.generateReference();
+    } else {
+      const existingPayment = await this.paymentRepository.findOne({
+        where: { reference }
+      });
+      if (existingPayment) {
+        throw new ConflictException(`Un paiement avec la référence ${reference} existe déjà`);
+      }
     }
 
     // 3. Create payment
     const payment = this.paymentRepository.create({
       ...createPaymentDto,
+      reference,
       etudiantId: student.id, // always store student's UUID
       statut: 'PAYE',
     });
     const savedPayment = await this.paymentRepository.save(payment);
 
     // 4. Update student financial status
-    const allPayments = await this.paymentRepository.find({
-      where: { etudiantId: student.id, statut: 'PAYE' }
-    });
-
-    const hasSoldeOrTranche2 = allPayments.some(
-      p => p.typePaiement === 'SOLDE' || p.typePaiement === 'TRANCHE_2'
-    );
-
-    if (hasSoldeOrTranche2) {
-      student.statutFinancier = 'PAYE';
-    } else if (allPayments.length > 0) {
-      student.statutFinancier = 'PARTIEL';
-    } else {
-      student.statutFinancier = 'IMPAYE';
-    }
-
-    await this.studentRepository.save(student);
+    await this.recalculateStudentFinancialStatus(student.id);
 
     return savedPayment;
   }
 
-  async findAll() {
-    return this.paymentRepository.find({
-      relations: ['student'],
-      order: { datePaiement: 'DESC' }
-    });
+  async findAll(anneeAcademique?: string, mention?: string, niveau?: string) {
+    const queryBuilder = this.paymentRepository.createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.student', 'student')
+      .orderBy('payment.datePaiement', 'DESC');
+
+    if (anneeAcademique) {
+      queryBuilder.andWhere('student.anneeAcademique = :anneeAcademique', { anneeAcademique });
+    }
+    if (mention) {
+      queryBuilder.andWhere('student.mention = :mention', { mention });
+    }
+    if (niveau) {
+      queryBuilder.andWhere('student.niveau = :niveau', { niveau });
+    }
+
+    return queryBuilder.getMany();
   }
 
   async findOne(id: string) {
@@ -78,6 +130,17 @@ export class PaymentsService {
     });
     if (!payment) {
       throw new NotFoundException(`Paiement avec l'ID ${id} non trouvé`);
+    }
+    return payment;
+  }
+
+  async findByReference(reference: string) {
+    const payment = await this.paymentRepository.findOne({
+      where: { reference },
+      relations: ['student']
+    });
+    if (!payment) {
+      throw new NotFoundException(`Paiement avec la référence ${reference} non trouvé`);
     }
     return payment;
   }
@@ -123,20 +186,7 @@ export class PaymentsService {
     });
 
     const totalPaid = allPayments.reduce((acc, p) => acc + p.montant, 0);
-
-    // Standard fees per level
-    let totalFees = 500;
-    const niveauLower = student.niveau.toLowerCase();
-    if (niveauLower.includes('prép') || niveauLower.includes('prep')) {
-      totalFees = 400;
-    } else if (niveauLower.startsWith('l')) {
-      totalFees = 500;
-    } else if (niveauLower.startsWith('m')) {
-      totalFees = 800;
-    } else if (niveauLower.startsWith('d')) {
-      totalFees = 1200;
-    }
-
+    const totalFees = this.getStudentTotalFees(student.niveau);
     const remaining = totalFees - totalPaid;
     const isEnRegle = remaining <= 0;
 
@@ -144,8 +194,10 @@ export class PaymentsService {
       studentId: student.id,
       matricule: student.matricule,
       nom: student.nom,
+      postnom: student.postnom,
       prenom: student.prenom,
       niveau: student.niveau,
+      mention: student.mention,
       anneeAcademique: student.anneeAcademique,
       statutFinancier: student.statutFinancier,
       totalPaid,
@@ -155,30 +207,24 @@ export class PaymentsService {
     };
   }
 
+  async update(id: string, updateDto: any) {
+    const payment = await this.findOne(id);
+    
+    if (updateDto.montant !== undefined) payment.montant = updateDto.montant;
+    if (updateDto.typePaiement !== undefined) payment.typePaiement = updateDto.typePaiement;
+    if (updateDto.reference !== undefined) payment.reference = updateDto.reference;
+    if (updateDto.statut !== undefined) payment.statut = updateDto.statut;
+    
+    const savedPayment = await this.paymentRepository.save(payment);
+    await this.recalculateStudentFinancialStatus(payment.etudiantId);
+    return savedPayment;
+  }
+
   async remove(id: string) {
     const payment = await this.findOne(id);
     const studentId = payment.etudiantId;
     await this.paymentRepository.remove(payment);
-
-    // Recalculate student financial status
-    const student = await this.studentRepository.findOne({ where: { id: studentId } });
-    if (student) {
-      const allPayments = await this.paymentRepository.find({
-        where: { etudiantId: student.id, statut: 'PAYE' }
-      });
-      const hasSoldeOrTranche2 = allPayments.some(
-        p => p.typePaiement === 'SOLDE' || p.typePaiement === 'TRANCHE_2'
-      );
-      if (hasSoldeOrTranche2) {
-        student.statutFinancier = 'PAYE';
-      } else if (allPayments.length > 0) {
-        student.statutFinancier = 'PARTIEL';
-      } else {
-        student.statutFinancier = 'IMPAYE';
-      }
-      await this.studentRepository.save(student);
-    }
-
+    await this.recalculateStudentFinancialStatus(studentId);
     return { message: 'Paiement supprimé avec succès' };
   }
 }

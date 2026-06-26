@@ -12,6 +12,9 @@ export class Student {
   @Column()
   nom: string;
 
+  @Column({ name: 'postnom', nullable: true })
+  postnom: string;
+
   @Column()
   prenom: string;
 

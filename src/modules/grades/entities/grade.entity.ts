@@ -41,6 +41,12 @@ export class Grade {
   @Column({ type: 'float', default: 0 })
   noteFinale: number;
 
+  @Column({ type: 'float', default: 0 })
+  notePresence: number;
+
+  @Column({ default: false })
+  estSoumis: boolean;
+
   @Column({ nullable: true })
   mention: string; // TB, B, AB, P, EC
 

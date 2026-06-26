@@ -25,8 +25,8 @@ export class GradesController {
   @ApiOperation({ summary: 'Get all grades for a specific course (for professors)' })
   async findCourseGrades(
     @Param('courseId') courseId: string,
+    @Request() req: any,
     @Query('anneeAcademique') anneeAcademique?: string,
-    @Request() req = null
   ) {
     const isProfessor = req.user.userType === 'PROFESSOR';
     return this.gradesService.findCourseGrades(courseId, isProfessor ? req.user.id : undefined, anneeAcademique);
@@ -48,13 +48,24 @@ export class GradesController {
     return this.gradesService.saisirCotes(saisirCotesDto, isProfessor ? req.user.id : undefined);
   }
 
-  @Post('publish')
-  @Roles('DIRECTION')
-  @ApiOperation({ summary: 'Publish grades for a mention and session (Direction only)' })
-  async publishGrades(
-    @Body('mention') mention: string,
+  @Post('submit')
+  @Roles('PROFESSOR', 'DIRECTION')
+  @ApiOperation({ summary: 'Submit grades for validation (Professor only)' })
+  async soumettreCotes(
+    @Body('coursId') coursId: string,
+    @Body('anneeAcademique') anneeAcademique: string,
     @Body('session') session: string,
   ) {
-    return this.gradesService.publierCotes(mention, session);
+    return this.gradesService.soumettreCotes(coursId, anneeAcademique, session);
+  }
+
+  @Post('publish')
+  @Roles('DIRECTION')
+  @ApiOperation({ summary: 'Publish grades for a course and session (Direction only)' })
+  async publishGrades(
+    @Body('coursId') coursId: string,
+    @Body('session') session: string,
+  ) {
+    return this.gradesService.publierCotes(coursId, session);
   }
 }

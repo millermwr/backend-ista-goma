@@ -21,8 +21,17 @@ export class StudentsController {
     @Query('mention') mention?: string,
     @Query('niveau') niveau?: string,
     @Query('search') search?: string,
+    @Query('anneeAcademique') anneeAcademique?: string,
   ) {
-    return this.studentsService.findAll(mention, niveau, search);
+    return this.studentsService.findAll(mention, niveau, search, anneeAcademique);
+  }
+
+  @Get('academic-years')
+  @Roles('DIRECTION', 'FINANCE', 'PROFESSOR', 'STUDENT')
+  @ApiOperation({ summary: 'Get all active academic years' })
+  @ApiResponse({ status: 200, description: 'Returns distinct list of academic years' })
+  async getAcademicYears() {
+    return this.studentsService.getAcademicYears();
   }
 
   @Get('matricule/:matricule')
