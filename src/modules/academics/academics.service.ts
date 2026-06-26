@@ -136,4 +136,51 @@ export class AcademicsService {
     await this.scheduleRepository.remove(schedule);
     return { message: 'Horaire supprimé avec succès' };
   }
+
+  async update(id: string, updateCourseDto: any) {
+    const course = await this.findOne(id);
+    Object.assign(course, updateCourseDto);
+    if (updateCourseDto.enseignantId) {
+      const professor = await this.userRepository.findOne({
+        where: { id: updateCourseDto.enseignantId, userType: 'PROFESSOR' }
+      });
+      if (!professor) {
+        throw new NotFoundException(`Professeur avec l'ID ${updateCourseDto.enseignantId} non trouvé`);
+      }
+      course.enseignant = professor;
+    } else if (updateCourseDto.enseignantId === null) {
+      course.enseignant = null;
+      course.enseignantId = null;
+    }
+    return this.courseRepository.save(course);
+  }
+
+  async deleteWeekSchedules(semaineDebut: string, annee?: string, mention?: string, niveau?: string) {
+    const where: any = { semaineDebut };
+    if (annee) where.anneeAcademique = annee;
+    if (mention) where.mention = mention;
+    if (niveau) where.niveau = niveau;
+
+    const schedules = await this.scheduleRepository.find({ where });
+    if (schedules.length > 0) {
+      await this.scheduleRepository.remove(schedules);
+    }
+    return { message: 'Tous les horaires de la semaine ont été supprimés avec succès' };
+  }
+
+  async publishSchedules(semaineDebut: string, annee?: string, mention?: string, niveau?: string) {
+    const where: any = { semaineDebut };
+    if (annee) where.anneeAcademique = annee;
+    if (mention) where.mention = mention;
+    if (niveau) where.niveau = niveau;
+
+    const schedules = await this.scheduleRepository.find({ where });
+    for (const schedule of schedules) {
+      schedule.estPublie = true;
+    }
+    if (schedules.length > 0) {
+      await this.scheduleRepository.save(schedules);
+    }
+    return { message: 'Horaire de la semaine publié avec succès' };
+  }
 }

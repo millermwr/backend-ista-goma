@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -97,5 +97,38 @@ export class AcademicsController {
   @ApiOperation({ summary: 'Delete a weekly course schedule' })
   async deleteSchedule(@Param('id') id: string) {
     return this.academicsService.deleteSchedule(id);
+  }
+
+  @Put('courses/:id')
+  @Roles('DIRECTION')
+  @ApiOperation({ summary: 'Update a course' })
+  async updateCourse(@Param('id') id: string, @Body() updateCourseDto: any) {
+    return this.academicsService.update(id, updateCourseDto);
+  }
+
+  @Delete('schedules/week/:semaineDebut')
+  @Roles('DIRECTION')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete all weekly schedules for a week' })
+  async deleteWeekSchedules(
+    @Param('semaineDebut') semaineDebut: string,
+    @Query('anneeAcademique') anneeAcademique?: string,
+    @Query('mention') mention?: string,
+    @Query('niveau') niveau?: string,
+  ) {
+    return this.academicsService.deleteWeekSchedules(semaineDebut, anneeAcademique, mention, niveau);
+  }
+
+  @Post('schedules/publish')
+  @Roles('DIRECTION')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Publish weekly course schedules' })
+  async publishSchedules(
+    @Body('semaineDebut') semaineDebut: string,
+    @Body('anneeAcademique') anneeAcademique?: string,
+    @Body('mention') mention?: string,
+    @Body('niveau') niveau?: string,
+  ) {
+    return this.academicsService.publishSchedules(semaineDebut, anneeAcademique, mention, niveau);
   }
 }

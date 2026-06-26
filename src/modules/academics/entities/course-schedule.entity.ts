@@ -40,6 +40,9 @@ export class CourseSchedule {
   @Column()
   niveau: string; // ex: "L1"
 
+  @Column({ default: false })
+  estPublie: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

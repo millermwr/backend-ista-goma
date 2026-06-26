@@ -61,11 +61,13 @@ export class GradesController {
 
   @Post('publish')
   @Roles('DIRECTION')
-  @ApiOperation({ summary: 'Publish grades for a course and session (Direction only)' })
+  @ApiOperation({ summary: 'Publish grades for a mention, level, year and session (Direction only)' })
   async publishGrades(
-    @Body('coursId') coursId: string,
+    @Body('mention') mention: string,
+    @Body('niveau') niveau: string,
+    @Body('anneeAcademique') anneeAcademique: string,
     @Body('session') session: string,
   ) {
-    return this.gradesService.publierCotes(coursId, session);
+    return this.gradesService.publierCotes(mention, niveau, anneeAcademique, session);
   }
 }

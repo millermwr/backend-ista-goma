@@ -218,22 +218,27 @@ export class GradesService {
     return { message: 'Cotes soumises pour validation avec succès' };
   }
 
-  async publierCotes(coursId: string, session: string) {
-    // Find the course
-    const course = await this.courseRepository.findOne({ where: { id: coursId } });
-    if (!course) {
-      throw new NotFoundException(`Cours avec l'ID ${coursId} non trouvé`);
+  async publierCotes(mention: string, niveau: string, anneeAcademique: string, session: string) {
+    // 1. Fetch students of this mention and niveau
+    const students = await this.studentRepository.find({
+      where: { mention, niveau, anneeAcademique }
+    });
+
+    if (students.length === 0) {
+      return { message: 'Aucun étudiant trouvé pour cette mention, ce niveau et cette année académique' };
     }
 
-    // Update all grades for this course in this session to published and submitted
+    const studentIds = students.map(s => s.id);
+
+    // 2. Publish all grades for these students in this session
     await this.gradeRepository.createQueryBuilder()
       .update(Grade)
       .set({ estPublie: true, estSoumis: true })
-      .where('coursId = :coursId', { coursId })
+      .where('etudiantId IN (:...studentIds)', { studentIds })
       .andWhere('session = :session', { session })
       .execute();
 
-    return { message: `Cotes du cours ${course.nom} (session ${session}) publiées avec succès` };
+    return { message: `Cotes de la mention ${mention} (${niveau}, ${anneeAcademique}, session ${session}) publiées avec succès` };
   }
 
   async getSuiviEncodage(mention?: string) {
