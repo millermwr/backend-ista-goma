@@ -35,7 +35,7 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: ['DIRECTION', 'FINANCE', 'PROFESSOR', 'STUDENT'],
+    enum: ['DIRECTION', 'FINANCE', 'PROFESSOR', 'STUDENT', 'ADMIN', 'STAFF'],
     default: 'STUDENT',
   })
   userType: string;
