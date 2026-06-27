@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { FirstTimeSetupDto, ChangePasswordDto } from './dto/setup-password.dto';
 
 @ApiTags('Authentication')
 @Controller('api/v1/auth')
@@ -50,5 +51,19 @@ export class AuthController {
   @ApiOperation({ summary: 'User logout' })
   async logout(@Request() req) {
     return { message: 'Logged out successfully' };
+  }
+
+  @Post('first-time-setup')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Setup student password for the first time' })
+  async firstTimeSetup(@Body() firstTimeSetupDto: FirstTimeSetupDto) {
+    return this.authService.firstTimeSetup(firstTimeSetupDto);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Change user password' })
+  async changePassword(@Body() changePasswordDto: ChangePasswordDto) {
+    return this.authService.changePassword(changePasswordDto);
   }
 }

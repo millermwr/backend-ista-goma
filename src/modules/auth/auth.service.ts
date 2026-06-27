@@ -4,14 +4,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../users/entities/user.entity';
+import { Student } from '../students/entities/student.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { FirstTimeSetupDto, ChangePasswordDto } from './dto/setup-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(Student)
+    private studentRepository: Repository<Student>,
     private jwtService: JwtService,
   ) {}
 
@@ -120,5 +124,76 @@ export class AuthService {
     return this.usersRepository.findOne({
       where: { id },
     });
+  }
+
+  async firstTimeSetup(firstTimeSetupDto: FirstTimeSetupDto) {
+    const student = await this.studentRepository.findOne({
+      where: { matricule: firstTimeSetupDto.matricule.toUpperCase() },
+      relations: ['user'],
+    });
+
+    if (!student) {
+      throw new BadRequestException('Matricule incorrect ou etudiant non trouve');
+    }
+
+    if (!student.user || student.user.email.toLowerCase() !== firstTimeSetupDto.email.toLowerCase()) {
+      throw new BadRequestException('Adresse email ne correspond pas au matricule fourni');
+    }
+
+    if (!student.user.isTempPassword) {
+      throw new BadRequestException('Le mot de passe a deja ete configure pour cet etudiant');
+    }
+
+    const hashedPassword = await bcrypt.hash(firstTimeSetupDto.newPassword, 10);
+    student.user.passwordHash = hashedPassword;
+    student.user.isTempPassword = false;
+    await this.usersRepository.save(student.user);
+
+    // Automatically generate token and log the user in after setup
+    const payload = {
+      id: student.user.id,
+      email: student.user.email,
+      userType: student.user.userType,
+    };
+
+    return {
+      message: 'Mot de passe configure avec succes',
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(payload, {
+        expiresIn: '7d',
+      }),
+      user: {
+        id: student.user.id,
+        email: student.user.email,
+        firstName: student.user.firstName,
+        lastName: student.user.lastName,
+        userType: student.user.userType,
+      },
+    };
+  }
+
+  async changePassword(changePasswordDto: ChangePasswordDto) {
+    const user = await this.usersRepository.findOne({
+      where: { email: changePasswordDto.email.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur non trouve');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      changePasswordDto.oldPassword,
+      user.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("L'ancien mot de passe est incorrect");
+    }
+
+    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    user.passwordHash = hashedPassword;
+    await this.usersRepository.save(user);
+
+    return { message: 'Mot de passe modifie avec succes' };
   }
 }
