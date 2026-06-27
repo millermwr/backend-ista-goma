@@ -136,7 +136,12 @@ export class AuthService {
       throw new BadRequestException('Matricule incorrect ou etudiant non trouve');
     }
 
-    if (!student.user || student.user.email.toLowerCase() !== firstTimeSetupDto.email.toLowerCase()) {
+    // Check if the provided email matches either the user account email or the student's personal email
+    const providedEmail = firstTimeSetupDto.email.toLowerCase();
+    const matchesUserEmail = student.user && student.user.email.toLowerCase() === providedEmail;
+    const matchesStudentEmail = student.email && student.email.toLowerCase() === providedEmail;
+
+    if (!student.user || (!matchesUserEmail && !matchesStudentEmail)) {
       throw new BadRequestException('Adresse email ne correspond pas au matricule fourni');
     }
 
@@ -145,6 +150,9 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(firstTimeSetupDto.newPassword, 10);
+    
+    // Save personal email as user login email and save new password
+    student.user.email = providedEmail;
     student.user.passwordHash = hashedPassword;
     student.user.isTempPassword = false;
     await this.usersRepository.save(student.user);
@@ -207,7 +215,11 @@ export class AuthService {
       throw new BadRequestException('Matricule incorrect ou etudiant non trouve');
     }
 
-    if (!student.user || student.user.email.toLowerCase() !== verifyFirstTimeDto.email.toLowerCase()) {
+    const providedEmail = verifyFirstTimeDto.email.toLowerCase();
+    const matchesUserEmail = student.user && student.user.email.toLowerCase() === providedEmail;
+    const matchesStudentEmail = student.email && student.email.toLowerCase() === providedEmail;
+
+    if (!student.user || (!matchesUserEmail && !matchesStudentEmail)) {
       throw new BadRequestException('Adresse email ne correspond pas au matricule fourni');
     }
 
