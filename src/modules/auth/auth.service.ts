@@ -7,7 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { Student } from '../students/entities/student.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { FirstTimeSetupDto, ChangePasswordDto } from './dto/setup-password.dto';
+import { FirstTimeSetupDto, ChangePasswordDto, VerifyFirstTimeDto } from './dto/setup-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -195,5 +195,26 @@ export class AuthService {
     await this.usersRepository.save(user);
 
     return { message: 'Mot de passe modifie avec succes' };
+  }
+
+  async verifyFirstTime(verifyFirstTimeDto: VerifyFirstTimeDto) {
+    const student = await this.studentRepository.findOne({
+      where: { matricule: verifyFirstTimeDto.matricule.toUpperCase() },
+      relations: ['user'],
+    });
+
+    if (!student) {
+      throw new BadRequestException('Matricule incorrect ou etudiant non trouve');
+    }
+
+    if (!student.user || student.user.email.toLowerCase() !== verifyFirstTimeDto.email.toLowerCase()) {
+      throw new BadRequestException('Adresse email ne correspond pas au matricule fourni');
+    }
+
+    if (!student.user.isTempPassword) {
+      throw new BadRequestException('Cet etudiant a deja configure son mot de passe');
+    }
+
+    return { success: true, message: 'Informations validees' };
   }
 }

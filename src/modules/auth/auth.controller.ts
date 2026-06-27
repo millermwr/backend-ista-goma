@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { FirstTimeSetupDto, ChangePasswordDto } from './dto/setup-password.dto';
+import { FirstTimeSetupDto, ChangePasswordDto, VerifyFirstTimeDto } from './dto/setup-password.dto';
 
 @ApiTags('Authentication')
 @Controller('api/v1/auth')
@@ -65,5 +65,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Change user password' })
   async changePassword(@Body() changePasswordDto: ChangePasswordDto) {
     return this.authService.changePassword(changePasswordDto);
+  }
+
+  @Post('verify-first-time')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify student email and matricule for first-time password setup' })
+  async verifyFirstTime(@Body() verifyFirstTimeDto: VerifyFirstTimeDto) {
+    return this.authService.verifyFirstTime(verifyFirstTimeDto);
   }
 }

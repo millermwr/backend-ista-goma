@@ -1,5 +1,15 @@
 import { IsEmail, IsNotEmpty, MinLength, IsString } from 'class-validator';
 
+export class VerifyFirstTimeDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  matricule: string;
+}
+
 export class FirstTimeSetupDto {
   @IsEmail()
   @IsNotEmpty()
