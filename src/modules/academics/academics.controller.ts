@@ -131,4 +131,17 @@ export class AcademicsController {
   ) {
     return this.academicsService.publishSchedules(semaineDebut, anneeAcademique, mention, niveau);
   }
+
+  @Get('my-schedule')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: "Get current student's weekly course schedule" })
+  async getMySchedule(@Request() req: any) {
+    const student = await this.academicsService.findStudentByUserId(req.user.id);
+    return this.academicsService.findSchedules(
+      undefined,
+      undefined,
+      student.mention,
+      student.niveau
+    );
+  }
 }

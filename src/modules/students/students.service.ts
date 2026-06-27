@@ -157,4 +157,15 @@ export class StudentsService {
     
     return years.sort();
   }
+
+  async findByUserId(userId: string) {
+    const student = await this.studentRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user']
+    });
+    if (!student) {
+      throw new NotFoundException(`Etudiant non trouve pour l'utilisateur ${userId}`);
+    }
+    return student;
+  }
 }

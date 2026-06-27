@@ -280,4 +280,14 @@ export class GradesService {
 
     return results;
   }
+
+  async findStudentByUserId(userId: string) {
+    const student = await this.studentRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException(`Etudiant non trouve pour l'utilisateur ${userId}`);
+    }
+    return student;
+  }
 }

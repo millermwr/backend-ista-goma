@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -74,5 +74,20 @@ export class StudentsController {
   @ApiResponse({ status: 204, description: 'Student deleted successfully' })
   async delete(@Param('id') id: string) {
     return this.studentsService.remove(id);
+  }
+
+  @Get('me')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: 'Get current student profile' })
+  async getMyProfile(@Request() req: any) {
+    return this.studentsService.findByUserId(req.user.id);
+  }
+
+  @Put('me')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: 'Update current student profile' })
+  async updateMyProfile(@Request() req: any, @Body() updateDto: any) {
+    const student = await this.studentsService.findByUserId(req.user.id);
+    return this.studentsService.update(student.id, updateDto);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, Param, Delete, HttpCode, HttpStatus, UseGuards, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -81,5 +81,13 @@ export class PaymentsController {
   @ApiResponse({ status: 204, description: 'Payment deleted successfully' })
   async delete(@Param('id') id: string) {
     return this.paymentsService.remove(id);
+  }
+
+  @Get('history')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: "Get current student's payment history" })
+  async getMyPaymentHistory(@Request() req: any) {
+    const student = await this.paymentsService.findStudentByUserId(req.user.id);
+    return this.paymentsService.findByStudent(student.id);
   }
 }

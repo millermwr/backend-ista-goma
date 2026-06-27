@@ -70,4 +70,12 @@ export class GradesController {
   ) {
     return this.gradesService.publierCotes(mention, niveau, anneeAcademique, session);
   }
+
+  @Get('my-grades')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: "Get current student's grades" })
+  async findMyGrades(@Request() req: any) {
+    const student = await this.gradesService.findStudentByUserId(req.user.id);
+    return this.gradesService.findStudentGrades(student.id);
+  }
 }

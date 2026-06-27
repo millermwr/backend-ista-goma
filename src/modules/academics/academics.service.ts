@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Course } from './entities/course.entity';
 import { User } from '../users/entities/user.entity';
 import { CourseSchedule } from './entities/course-schedule.entity';
+import { Student } from '../students/entities/student.entity';
 import { CreateCourseDto } from './dto/create-course.dto';
 
 @Injectable()
@@ -15,6 +16,8 @@ export class AcademicsService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(CourseSchedule)
     private readonly scheduleRepository: Repository<CourseSchedule>,
+    @InjectRepository(Student)
+    private readonly studentRepository: Repository<Student>,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -182,5 +185,15 @@ export class AcademicsService {
       await this.scheduleRepository.save(schedules);
     }
     return { message: 'Horaire de la semaine publié avec succès' };
+  }
+
+  async findStudentByUserId(userId: string) {
+    const student = await this.studentRepository.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!student) {
+      throw new NotFoundException(`Etudiant non trouve pour l'utilisateur ${userId}`);
+    }
+    return student;
   }
 }
