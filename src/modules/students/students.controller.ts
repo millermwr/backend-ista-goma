@@ -68,7 +68,7 @@ export class StudentsController {
   }
 
   @Delete(':id')
-  @Roles('DIRECTION')
+  @Roles('DIRECTION', 'FINANCE')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete student' })
   @ApiResponse({ status: 204, description: 'Student deleted successfully' })
