@@ -75,7 +75,7 @@ export class PaymentsController {
   }
 
   @Delete(':id')
-  @Roles('DIRECTION')
+  @Roles('DIRECTION', 'FINANCE')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete/cancel a payment' })
   @ApiResponse({ status: 204, description: 'Payment deleted successfully' })

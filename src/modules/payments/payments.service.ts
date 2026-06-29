@@ -32,15 +32,7 @@ export class PaymentsService {
   }
 
   private generateReference(): string {
-    const date = new Date();
-    const yyyy = date.getFullYear().toString();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    const ss = String(date.getSeconds()).padStart(2, '0');
-    const rand = Math.floor(1000 + Math.random() * 9000).toString();
-    return `REF-${yyyy}${mm}${dd}-${hh}${min}${ss}-${rand}`;
+    return Date.now().toString().slice(-12);
   }
 
   async recalculateStudentFinancialStatus(studentId: string) {
@@ -67,11 +59,11 @@ export class PaymentsService {
 
   async create(createPaymentDto: CreatePaymentDto) {
     // 1. Find student
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(createPaymentDto.etudiantId);
     const student = await this.studentRepository.findOne({
-      where: [
-        { id: createPaymentDto.etudiantId },
-        { matricule: createPaymentDto.etudiantId }
-      ]
+      where: isUuid
+        ? { id: createPaymentDto.etudiantId }
+        : { matricule: createPaymentDto.etudiantId }
     });
     if (!student) {
       throw new NotFoundException(`Étudiant avec l'identifiant ${createPaymentDto.etudiantId} non trouvé`);
@@ -159,20 +151,19 @@ export class PaymentsService {
   }
 
   async getStatutFinancier(studentId: string, anneeAcademique?: string) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId);
     let student: Student | null = null;
     if (anneeAcademique) {
       student = await this.studentRepository.findOne({
-        where: [
-          { id: studentId, anneeAcademique },
-          { matricule: studentId, anneeAcademique }
-        ]
+        where: isUuid 
+          ? { id: studentId, anneeAcademique } 
+          : { matricule: studentId, anneeAcademique }
       });
     } else {
       student = await this.studentRepository.findOne({
-        where: [
-          { id: studentId },
-          { matricule: studentId }
-        ],
+        where: isUuid
+          ? { id: studentId }
+          : { matricule: studentId },
         order: { createdAt: 'DESC' }
       });
     }
