@@ -32,7 +32,7 @@ export class PaymentsService {
   }
 
   private generateReference(): string {
-    return Date.now().toString().slice(-12);
+    return Date.now().toString().slice(-12).padStart(12, '0');
   }
 
   async recalculateStudentFinancialStatus(studentId: string) {
