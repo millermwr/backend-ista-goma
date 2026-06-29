@@ -42,6 +42,12 @@ export class Student {
   @Column({ nullable: true })
   motDePasseTemporaire: string;
 
+  @Column({ nullable: true })
+  adresse: string;
+
+  @Column({ nullable: true })
+  telephone: string;
+
   @OneToOne(() => User, { cascade: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;

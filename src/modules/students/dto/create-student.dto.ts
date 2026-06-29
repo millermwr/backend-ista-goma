@@ -32,4 +32,12 @@ export class CreateStudentDto {
   @IsNotEmpty()
   @IsString()
   anneeAcademique: string;
+
+  @IsOptional()
+  @IsString()
+  adresse?: string;
+
+  @IsOptional()
+  @IsString()
+  telephone?: string;
 }
