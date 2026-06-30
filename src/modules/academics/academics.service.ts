@@ -92,7 +92,7 @@ export class AcademicsService {
   async findProfessors() {
     return this.userRepository.find({
       where: { userType: 'PROFESSOR', status: 'ACTIVE' },
-      select: ['id', 'email', 'firstName', 'lastName', 'plainPassword'],
+      select: ['id', 'email', 'firstName', 'lastName', 'plainPassword', 'phoneNumber'],
       order: { lastName: 'ASC', firstName: 'ASC' }
     });
   }
