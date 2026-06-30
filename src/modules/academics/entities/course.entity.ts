@@ -21,6 +21,9 @@ export class Course {
   @Column({ default: 0 })
   credits: number;
 
+  @Column({ default: '2025-2026' })
+  anneeAcademique: string;
+
   @Column()
   section: string;
 

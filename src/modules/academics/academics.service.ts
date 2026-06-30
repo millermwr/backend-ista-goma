@@ -65,7 +65,7 @@ export class AcademicsService {
     });
   }
 
-  async assignProfessor(courseId: string, professorId: string | null) {
+  async assignProfessor(courseId: string, professorId: string | null, anneeAcademique?: string) {
     const course = await this.findOne(courseId);
     
     if (!professorId) {
@@ -80,6 +80,10 @@ export class AcademicsService {
       }
       course.enseignant = professor;
       course.enseignantId = professorId;
+    }
+
+    if (anneeAcademique) {
+      course.anneeAcademique = anneeAcademique;
     }
 
     return this.courseRepository.save(course);

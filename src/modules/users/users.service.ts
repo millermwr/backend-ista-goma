@@ -21,6 +21,7 @@ export class UsersService {
         'userType',
         'status',
         'plainPassword',
+        'phoneNumber',
       ],
     });
   }
@@ -36,6 +37,7 @@ export class UsersService {
         'userType',
         'status',
         'plainPassword',
+        'phoneNumber',
       ],
     });
   }

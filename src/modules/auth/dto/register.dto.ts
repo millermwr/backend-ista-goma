@@ -26,4 +26,6 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsIn(USER_TYPES)
   userType: string;
+
+  phoneNumber?: string;
 }

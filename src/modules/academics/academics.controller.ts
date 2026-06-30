@@ -59,8 +59,9 @@ export class AcademicsController {
   async assignProfessor(
     @Param('courseId') courseId: string,
     @Body('enseignantId') enseignantId: string | null,
+    @Body('anneeAcademique') anneeAcademique?: string,
   ) {
-    return this.academicsService.assignProfessor(courseId, enseignantId);
+    return this.academicsService.assignProfessor(courseId, enseignantId, anneeAcademique);
   }
 
   @Delete('courses/:id')
