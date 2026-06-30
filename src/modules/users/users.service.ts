@@ -47,4 +47,8 @@ export class UsersService {
     await this.usersRepository.update(id, updateData);
     return this.findById(id);
   }
+
+  async remove(id: string) {
+    await this.usersRepository.delete(id);
+  }
 }
