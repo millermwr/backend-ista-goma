@@ -35,6 +35,7 @@ export class AuthService {
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
       passwordHash: hashedPassword,
+      plainPassword: registerDto.password,
       userType: registerDto.userType || 'STUDENT',
       status: 'ACTIVE',
     });

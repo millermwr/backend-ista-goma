@@ -49,6 +49,9 @@ export class User {
   @Column({ nullable: true })
   lastLogin: Date;
 
+  @Column({ nullable: true })
+  plainPassword: string;
+
   // Virtual properties for response
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`;

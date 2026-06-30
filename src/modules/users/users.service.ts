@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -19,6 +20,7 @@ export class UsersService {
         'lastName',
         'userType',
         'status',
+        'plainPassword',
       ],
     });
   }
@@ -33,6 +35,7 @@ export class UsersService {
         'lastName',
         'userType',
         'status',
+        'plainPassword',
       ],
     });
   }
@@ -43,8 +46,14 @@ export class UsersService {
     });
   }
 
-  async update(id: string, updateData: Partial<User>) {
-    await this.usersRepository.update(id, updateData);
+  async update(id: string, updateData: any) {
+    const dataToUpdate: any = { ...updateData };
+    if (updateData.password) {
+      dataToUpdate.passwordHash = await bcrypt.hash(updateData.password, 10);
+      dataToUpdate.plainPassword = updateData.password;
+      delete dataToUpdate.password;
+    }
+    await this.usersRepository.update(id, dataToUpdate);
     return this.findById(id);
   }
 
