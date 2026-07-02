@@ -136,6 +136,7 @@ export class GradesService {
         studentName: `${student.prenom} ${student.nom}`,
         matricule: student.matricule,
         courseId: course.id,
+        courseCode: course.code,
         courseName: course.nom,
         mention: student.mention,
         niveau: student.niveau,
