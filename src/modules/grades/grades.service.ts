@@ -135,10 +135,16 @@ export class GradesService {
         studentId: student.id,
         studentName: `${student.prenom} ${student.nom}`,
         matricule: student.matricule,
+        courseId: course.id,
+        courseName: course.nom,
+        mention: student.mention,
+        niveau: student.niveau,
         tpGrade: grade?.noteTP ?? 0,
         examGrade: grade?.noteExamen ?? 0,
         finalGrade: grade?.noteFinale ?? 0,
-        mention: grade?.mention ?? 'EC',
+        notePresence: grade?.notePresence ?? 0,
+        estSoumis: grade?.estSoumis ?? false,
+        session: grade?.session ?? 'Session 1',
         status: grade ? (grade.estPublie ? 'PUBLISHED' : 'ENCODED') : 'NOT_ENCODED'
       };
     });
