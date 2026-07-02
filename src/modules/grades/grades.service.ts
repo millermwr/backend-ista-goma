@@ -235,7 +235,12 @@ export class GradesService {
         where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique }
       });
 
-      const noteFinale = entry.noteTP + entry.noteExamen + (entry.notePresence || 0);
+      let noteFinale = 0;
+      if (dto.session === 'Rattrapage') {
+        noteFinale = entry.noteExamen;
+      } else {
+        noteFinale = Math.round(((entry.noteTP + entry.noteExamen + (entry.notePresence || 0)) / 3) * 10) / 10;
+      }
       let mention = 'EC';
       if (noteFinale >= 16) mention = 'TB';
       else if (noteFinale >= 14) mention = 'B';
