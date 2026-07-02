@@ -250,19 +250,47 @@ export class GradesService {
       relations: ['enseignant']
     });
 
+    const students = await this.studentRepository.find({
+      select: ['mention', 'niveau']
+    });
+
+    const studentCounts = new Map<string, number>();
+    for (const student of students) {
+      const key = `${student.mention}|${student.niveau}`;
+      studentCounts.set(key, (studentCounts.get(key) || 0) + 1);
+    }
+
+    const gradesCounts = await this.gradeRepository
+      .createQueryBuilder('grade')
+      .select('grade.coursId', 'coursId')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('grade.coursId')
+      .getRawMany();
+
+    const gradesCountMap = new Map<string, number>();
+    for (const row of gradesCounts) {
+      gradesCountMap.set(row.coursId, parseInt(row.count, 10));
+    }
+
+    const publishedCounts = await this.gradeRepository
+      .createQueryBuilder('grade')
+      .select('grade.coursId', 'coursId')
+      .addSelect('COUNT(*)', 'count')
+      .where('grade.estPublie = :estPublie', { estPublie: true })
+      .groupBy('grade.coursId')
+      .getRawMany();
+
+    const publishedCountMap = new Map<string, number>();
+    for (const row of publishedCounts) {
+      publishedCountMap.set(row.coursId, parseInt(row.count, 10));
+    }
+
     const results: any[] = [];
     for (const course of courses) {
-      const studentsCount = await this.studentRepository.count({
-        where: { mention: course.mention, niveau: course.niveau }
-      });
-
-      const gradesCount = await this.gradeRepository.count({
-        where: { coursId: course.id }
-      });
-
-      const publishedCount = await this.gradeRepository.count({
-        where: { coursId: course.id, estPublie: true }
-      });
+      const key = `${course.mention}|${course.niveau}`;
+      const studentsCount = studentCounts.get(key) || 0;
+      const gradesCount = gradesCountMap.get(course.id) || 0;
+      const publishedCount = publishedCountMap.get(course.id) || 0;
 
       results.push({
         courseId: course.id,
