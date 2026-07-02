@@ -124,7 +124,69 @@ export class GradesService {
       order: { nom: 'ASC', prenom: 'ASC' }
     });
 
-    // Find all existing grades for this course, academic year and session
+    if (targetSession === 'Rattrapage') {
+      // For Rattrapage: fetch Normale session grades to determine pass/fail
+      const normaleGrades = await this.gradeRepository.find({
+        where: { coursId: course.id, anneeAcademique: targetAnnee, session: 'Normale' }
+      });
+      // Also fetch existing Rattrapage grades
+      const rattrapageGrades = await this.gradeRepository.find({
+        where: { coursId: course.id, anneeAcademique: targetAnnee, session: 'Rattrapage' }
+      });
+
+      return students.map(student => {
+        const normaleGrade = normaleGrades.find(g => g.etudiantId === student.id);
+        const rattrapageGrade = rattrapageGrades.find(g => g.etudiantId === student.id);
+        const normaleFinale = normaleGrade?.noteFinale ?? 0;
+        const passed = normaleFinale >= 10;
+
+        if (passed) {
+          // Student passed in Normale: show their Normale final grade, read-only
+          return {
+            id: normaleGrade?.id || null,
+            studentId: student.id,
+            studentName: `${student.prenom} ${student.nom}`,
+            matricule: student.matricule,
+            courseId: course.id,
+            courseCode: course.code,
+            courseName: course.nom,
+            mention: student.mention,
+            niveau: student.niveau,
+            tpGrade: normaleGrade?.noteTP ?? 0,
+            examGrade: normaleGrade?.noteExamen ?? 0,
+            finalGrade: normaleFinale,
+            notePresence: normaleGrade?.notePresence ?? 0,
+            estSoumis: true,
+            session: 'Rattrapage',
+            passedNormale: true,
+            status: 'PASSED'
+          };
+        } else {
+          // Student failed in Normale: show rattrapage grades (exam only)
+          return {
+            id: rattrapageGrade?.id || null,
+            studentId: student.id,
+            studentName: `${student.prenom} ${student.nom}`,
+            matricule: student.matricule,
+            courseId: course.id,
+            courseCode: course.code,
+            courseName: course.nom,
+            mention: student.mention,
+            niveau: student.niveau,
+            tpGrade: 0,
+            examGrade: rattrapageGrade?.noteExamen ?? 0,
+            finalGrade: rattrapageGrade?.noteFinale ?? 0,
+            notePresence: 0,
+            estSoumis: rattrapageGrade?.estSoumis ?? false,
+            session: 'Rattrapage',
+            passedNormale: false,
+            status: rattrapageGrade ? (rattrapageGrade.estPublie ? 'PUBLISHED' : 'ENCODED') : 'NOT_ENCODED'
+          };
+        }
+      });
+    }
+
+    // Normal session
     const grades = await this.gradeRepository.find({
       where: { coursId: course.id, anneeAcademique: targetAnnee, session: targetSession }
     });
@@ -147,6 +209,7 @@ export class GradesService {
         notePresence: grade?.notePresence ?? 0,
         estSoumis: grade?.estSoumis ?? false,
         session: targetSession,
+        passedNormale: false,
         status: grade ? (grade.estPublie ? 'PUBLISHED' : 'ENCODED') : 'NOT_ENCODED'
       };
     });
