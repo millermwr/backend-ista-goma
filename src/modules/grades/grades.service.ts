@@ -102,7 +102,7 @@ export class GradesService {
     };
   }
 
-  async findCourseGrades(courseId: string, professorId?: string, anneeAcademique?: string) {
+  async findCourseGrades(courseId: string, professorId?: string, anneeAcademique?: string, session?: string) {
     const course = await this.courseRepository.findOne({
       where: { id: courseId },
       relations: ['enseignant']
@@ -116,6 +116,7 @@ export class GradesService {
     }
 
     const targetAnnee = anneeAcademique || '2025-2026';
+    const targetSession = session || 'Normale';
 
     // Find all students enrolled in this course's mention, level, and specific academic year
     const students = await this.studentRepository.find({
@@ -123,9 +124,9 @@ export class GradesService {
       order: { nom: 'ASC', prenom: 'ASC' }
     });
 
-    // Find all existing grades for this course and academic year
+    // Find all existing grades for this course, academic year and session
     const grades = await this.gradeRepository.find({
-      where: { coursId: course.id, anneeAcademique: targetAnnee }
+      where: { coursId: course.id, anneeAcademique: targetAnnee, session: targetSession }
     });
 
     return students.map(student => {
@@ -145,7 +146,7 @@ export class GradesService {
         finalGrade: grade?.noteFinale ?? 0,
         notePresence: grade?.notePresence ?? 0,
         estSoumis: grade?.estSoumis ?? false,
-        session: grade?.session ?? 'Session 1',
+        session: targetSession,
         status: grade ? (grade.estPublie ? 'PUBLISHED' : 'ENCODED') : 'NOT_ENCODED'
       };
     });

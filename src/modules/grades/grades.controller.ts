@@ -27,9 +27,10 @@ export class GradesController {
     @Param('courseId') courseId: string,
     @Request() req: any,
     @Query('anneeAcademique') anneeAcademique?: string,
+    @Query('session') session?: string,
   ) {
     const isProfessor = req.user.userType === 'PROFESSOR';
-    return this.gradesService.findCourseGrades(courseId, isProfessor ? req.user.id : undefined, anneeAcademique);
+    return this.gradesService.findCourseGrades(courseId, isProfessor ? req.user.id : undefined, anneeAcademique, session);
   }
 
   @Get('suivi')
