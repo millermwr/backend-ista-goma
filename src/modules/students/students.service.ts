@@ -167,10 +167,10 @@ export class StudentsService {
   }
 
   async findByUserId(userId: string) {
-    const student = await this.studentRepository.createQueryBuilder('student')
-      .leftJoinAndSelect('student.user', 'user')
-      .where('student.userId = :userId', { userId })
-      .getOne();
+    const student = await this.studentRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user']
+    });
 
     if (!student) {
       throw new NotFoundException(`Etudiant non trouve pour l'utilisateur ${userId}`);
