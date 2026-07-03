@@ -135,8 +135,16 @@ export class StudentsService {
 
   async remove(id: string) {
     const student = await this.findOne(id);
-    // Delete student, cascade will delete user
+    const linkedUser = student.user;
+
+    // Delete student
     await this.studentRepository.remove(student);
+
+    // Explicitly delete the linked user record to revoke authentication access
+    if (linkedUser) {
+      await this.userRepository.remove(linkedUser);
+    }
+
     return { message: 'Étudiant supprimé avec succès' };
   }
 
