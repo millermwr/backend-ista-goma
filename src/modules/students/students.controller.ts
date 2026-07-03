@@ -80,7 +80,23 @@ export class StudentsController {
   @Roles('STUDENT')
   @ApiOperation({ summary: 'Get current student profile' })
   async getMyProfile(@Request() req: any) {
-    return this.studentsService.findByUserId(req.user.id);
+    const student = await this.studentsService.findByUserId(req.user.id);
+    return {
+      id: student.id,
+      matricule: student.matricule,
+      nom: student.nom,
+      postnom: student.postnom,
+      prenom: student.prenom,
+      fullName: `${student.prenom} ${student.nom}`,
+      email: student.user?.email || student.email,
+      mention: student.mention,
+      section: student.section,
+      niveau: student.niveau,
+      anneeAcademique: student.anneeAcademique,
+      statutFinancier: student.statutFinancier,
+      telephone: student.telephone,
+      adresse: student.adresse
+    };
   }
 
   @Put('me')
