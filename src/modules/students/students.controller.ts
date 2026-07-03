@@ -13,6 +13,37 @@ import { CreateStudentDto } from './dto/create-student.dto';
 export class StudentsController {
   constructor(private readonly studentsService: StudentsService) {}
 
+  @Get('me')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: 'Get current student profile' })
+  async getMyProfile(@Request() req: any) {
+    const student = await this.studentsService.findByUserId(req.user.id);
+    return {
+      id: student.id,
+      matricule: student.matricule,
+      nom: student.nom,
+      postnom: student.postnom,
+      prenom: student.prenom,
+      fullName: `${student.prenom} ${student.nom}`,
+      email: student.user?.email || student.email,
+      mention: student.mention,
+      section: student.section,
+      niveau: student.niveau,
+      anneeAcademique: student.anneeAcademique,
+      statutFinancier: student.statutFinancier,
+      telephone: student.telephone,
+      adresse: student.adresse
+    };
+  }
+
+  @Put('me')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: 'Update current student profile' })
+  async updateMyProfile(@Request() req: any, @Body() updateDto: any) {
+    const student = await this.studentsService.findByUserId(req.user.id);
+    return this.studentsService.update(student.id, updateDto);
+  }
+
   @Get()
   @Roles('DIRECTION', 'FINANCE')
   @ApiOperation({ summary: 'Get all students' })
@@ -74,36 +105,5 @@ export class StudentsController {
   @ApiResponse({ status: 204, description: 'Student deleted successfully' })
   async delete(@Param('id') id: string) {
     return this.studentsService.remove(id);
-  }
-
-  @Get('me')
-  @Roles('STUDENT')
-  @ApiOperation({ summary: 'Get current student profile' })
-  async getMyProfile(@Request() req: any) {
-    const student = await this.studentsService.findByUserId(req.user.id);
-    return {
-      id: student.id,
-      matricule: student.matricule,
-      nom: student.nom,
-      postnom: student.postnom,
-      prenom: student.prenom,
-      fullName: `${student.prenom} ${student.nom}`,
-      email: student.user?.email || student.email,
-      mention: student.mention,
-      section: student.section,
-      niveau: student.niveau,
-      anneeAcademique: student.anneeAcademique,
-      statutFinancier: student.statutFinancier,
-      telephone: student.telephone,
-      adresse: student.adresse
-    };
-  }
-
-  @Put('me')
-  @Roles('STUDENT')
-  @ApiOperation({ summary: 'Update current student profile' })
-  async updateMyProfile(@Request() req: any, @Body() updateDto: any) {
-    const student = await this.studentsService.findByUserId(req.user.id);
-    return this.studentsService.update(student.id, updateDto);
   }
 }
