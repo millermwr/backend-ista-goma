@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppService {
   getHello(): string {
-    return 'Système Académique ISTAG Oma - API v1.0.0';
+    return 'Système Académique ISTAG Oma - API v1.0.0 - Deploy V3';
   }
 
   getStatus() {
