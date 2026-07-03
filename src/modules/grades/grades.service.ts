@@ -232,7 +232,7 @@ export class GradesService {
       }
 
       let grade = await this.gradeRepository.findOne({
-        where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique }
+        where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique, session: dto.session }
       });
 
       let noteFinale = 0;
