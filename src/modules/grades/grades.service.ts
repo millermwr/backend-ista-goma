@@ -92,6 +92,8 @@ export class GradesService {
         studentId: g.etudiantId,
         courseId: g.coursId,
         courseName: g.nomCours,
+        courseCode: g.course?.code || null,
+        courseCredits: g.course?.credits || 5,
         tpGrade: g.noteTP,
         examGrade: g.noteExamen,
         finalGrade: g.noteFinale,
