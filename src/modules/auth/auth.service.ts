@@ -20,8 +20,9 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
+    const emailLower = registerDto.email.toLowerCase();
     const existingUser = await this.usersRepository.findOne({
-      where: { email: registerDto.email },
+      where: { email: emailLower },
     });
 
     if (existingUser) {
@@ -31,7 +32,7 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
     const user = this.usersRepository.create({
-      email: registerDto.email,
+      email: emailLower,
       firstName: registerDto.firstName,
       lastName: registerDto.lastName,
       passwordHash: hashedPassword,
@@ -50,7 +51,7 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const user = await this.usersRepository.findOne({
-      where: { email: loginDto.email },
+      where: { email: loginDto.email.toLowerCase() },
     });
 
     if (!user) {
