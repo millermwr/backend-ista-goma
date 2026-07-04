@@ -13,6 +13,14 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
+  @Get('history')
+  @Roles('STUDENT')
+  @ApiOperation({ summary: "Get current student's payment history" })
+  async getMyPaymentHistory(@Request() req: any) {
+    const student = await this.paymentsService.findStudentByUserId(req.user.id);
+    return this.paymentsService.findByStudent(student.id);
+  }
+
   @Get()
   @Roles('DIRECTION', 'FINANCE')
   @ApiOperation({ summary: 'Get all payments' })
@@ -81,13 +89,5 @@ export class PaymentsController {
   @ApiResponse({ status: 204, description: 'Payment deleted successfully' })
   async delete(@Param('id') id: string) {
     return this.paymentsService.remove(id);
-  }
-
-  @Get('history')
-  @Roles('STUDENT')
-  @ApiOperation({ summary: "Get current student's payment history" })
-  async getMyPaymentHistory(@Request() req: any) {
-    const student = await this.paymentsService.findStudentByUserId(req.user.id);
-    return this.paymentsService.findByStudent(student.id);
   }
 }
