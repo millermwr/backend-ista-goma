@@ -18,20 +18,35 @@ export class StudentsService {
   async create(createStudentDto: CreateStudentDto) {
     // 1. Generate unique matricule
     const yearPart = createStudentDto.anneeAcademique.split('-')[0] || new Date().getFullYear().toString();
+    
+    // Find the student with the highest matricule sequence for this academic year
+    const lastStudent = await this.studentRepository.findOne({
+      where: { anneeAcademique: createStudentDto.anneeAcademique },
+      order: { matricule: 'DESC' }
+    });
+
+    let nextSeq = 1;
+    if (lastStudent && lastStudent.matricule) {
+      const parts = lastStudent.matricule.split('-');
+      const lastSeqStr = parts[parts.length - 1];
+      const lastSeq = parseInt(lastSeqStr, 10);
+      if (!isNaN(lastSeq)) {
+        nextSeq = lastSeq + 1;
+      }
+    }
+
     let matricule = '';
     let isUnique = false;
     let attempts = 0;
-    
-    while (!isUnique && attempts < 10) {
-      const count = await this.studentRepository.count({
-        where: { anneeAcademique: createStudentDto.anneeAcademique }
-      });
-      const sequence = String(count + 1 + attempts).padStart(4, '0');
+    while (!isUnique && attempts < 50) {
+      const sequence = String(nextSeq).padStart(4, '0');
       matricule = `ISTA-${yearPart}-${sequence}`;
       
       const existing = await this.studentRepository.findOne({ where: { matricule } });
       if (!existing) {
         isUnique = true;
+      } else {
+        nextSeq++;
       }
       attempts++;
     }
