@@ -120,9 +120,16 @@ export class GradesService {
     const targetAnnee = anneeAcademique || '2025-2026';
     const targetSession = session || 'Normale';
 
+    const isPrep = course.niveau === 'L0 (Préparatoire)';
+    
     // Find all students enrolled in this course's mention, level, and specific academic year
     const students = await this.studentRepository.find({
-      where: { mention: course.mention, niveau: course.niveau, anneeAcademique: targetAnnee },
+      where: isPrep
+        ? [
+            { mention: 'Tronc Commun', niveau: course.niveau, anneeAcademique: targetAnnee },
+            { mention: 'N/A', niveau: course.niveau, anneeAcademique: targetAnnee }
+          ]
+        : { mention: course.mention, niveau: course.niveau, anneeAcademique: targetAnnee },
       order: { nom: 'ASC', prenom: 'ASC' }
     });
 
