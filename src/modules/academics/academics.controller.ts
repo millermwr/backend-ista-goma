@@ -138,10 +138,11 @@ export class AcademicsController {
   @ApiOperation({ summary: "Get current student's weekly course schedule" })
   async getMySchedule(@Request() req: any) {
     const student = await this.academicsService.findStudentByUserId(req.user.id);
+    const targetMention = student.niveau === 'L0 (Préparatoire)' ? 'Tronc Commun' : student.mention;
     return this.academicsService.findSchedules(
       undefined,
       undefined,
-      student.mention,
+      targetMention,
       student.niveau
     );
   }
