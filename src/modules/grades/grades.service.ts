@@ -380,6 +380,7 @@ export class GradesService {
 
     const results: any[] = [];
     for (const course of courses) {
+      const key = `${course.mention}|${course.niveau}`;
       const isL0 = course.niveau === 'L0 (Préparatoire)';
       const studentsCount = isL0 
         ? ((studentCounts.get(`Tronc Commun|${course.niveau}`) || 0) + (studentCounts.get(`N/A|${course.niveau}`) || 0))
