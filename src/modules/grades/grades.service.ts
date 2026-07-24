@@ -305,9 +305,16 @@ export class GradesService {
   }
 
   async publierCotes(mention: string, niveau: string, anneeAcademique: string, session: string) {
+    const isPrep = niveau === 'L0 (Préparatoire)';
+    
     // 1. Fetch students of this mention and niveau
     const students = await this.studentRepository.find({
-      where: { mention, niveau, anneeAcademique }
+      where: isPrep
+        ? [
+            { mention: 'Tronc Commun', niveau, anneeAcademique },
+            { mention: 'N/A', niveau, anneeAcademique }
+          ]
+        : { mention, niveau, anneeAcademique }
     });
 
     if (students.length === 0) {
@@ -373,8 +380,10 @@ export class GradesService {
 
     const results: any[] = [];
     for (const course of courses) {
-      const key = `${course.mention}|${course.niveau}`;
-      const studentsCount = studentCounts.get(key) || 0;
+      const isL0 = course.niveau === 'L0 (Préparatoire)';
+      const studentsCount = isL0 
+        ? ((studentCounts.get(`Tronc Commun|${course.niveau}`) || 0) + (studentCounts.get(`N/A|${course.niveau}`) || 0))
+        : (studentCounts.get(key) || 0);
       const gradesCount = gradesCountMap.get(course.id) || 0;
       const publishedCount = publishedCountMap.get(course.id) || 0;
 
