@@ -91,7 +91,7 @@ export class GradesService {
         id: g.id,
         studentId: g.etudiantId,
         courseId: g.coursId,
-        courseName: g.nomCours,
+        courseName: g.course?.nom || g.nomCours,
         courseCode: g.course?.code || null,
         courseCredits: g.course?.credits || 5,
         tpGrade: g.noteTP,
@@ -286,6 +286,7 @@ export class GradesService {
       else if (noteFinale >= 10) mention = 'P';
 
       if (grade) {
+        grade.nomCours = course.nom;
         grade.noteTP = entry.noteTP;
         grade.noteExamen = entry.noteExamen;
         grade.notePresence = entry.notePresence || 0;
