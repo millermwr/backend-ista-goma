@@ -243,9 +243,10 @@ export class GradesService {
       let grade = await this.gradeRepository.findOne({
         where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique, session: dto.session }
       });
-
       let noteFinale = 0;
-      if (dto.session === 'Rattrapage') {
+      if (entry.noteFinale !== undefined && entry.noteFinale !== null) {
+        noteFinale = entry.noteFinale;
+      } else if (dto.session === 'Rattrapage') {
         noteFinale = entry.noteExamen;
       } else {
         noteFinale = Math.round(((entry.noteTP + entry.noteExamen + (entry.notePresence || 0)) / 3) * 10) / 10;
