@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Grade } from './entities/grade.entity';
 import { Student } from '../students/entities/student.entity';
 import { Course } from '../academics/entities/course.entity';
@@ -234,15 +234,43 @@ export class GradesService {
       throw new ForbiddenException(`Vous n'êtes pas autorisé à encoder les notes de ce cours.`);
     }
 
+    const studentIds = dto.grades.map(g => g.etudiantId);
+    if (studentIds.length === 0) {
+      return { message: 'Aucune cote à enregistrer' };
+    }
+
+    // 1. Fetch all students in batch
+    const students = await this.studentRepository.find({
+      where: { id: In(studentIds) }
+    });
+    const studentMap = new Map<string, Student>();
+    for (const s of students) {
+      studentMap.set(s.id, s);
+    }
+
+    // 2. Fetch all existing grades in batch
+    const existingGrades = await this.gradeRepository.find({
+      where: {
+        coursId: course.id,
+        anneeAcademique: dto.anneeAcademique,
+        session: dto.session,
+        etudiantId: In(studentIds)
+      }
+    });
+    const gradeMap = new Map<string, Grade>();
+    for (const g of existingGrades) {
+      gradeMap.set(g.etudiantId, g);
+    }
+
+    const gradesToSave: Grade[] = [];
+
     for (const entry of dto.grades) {
-      const student = await this.studentRepository.findOne({ where: { id: entry.etudiantId } });
+      const student = studentMap.get(entry.etudiantId);
       if (!student) {
         throw new NotFoundException(`Étudiant avec l'ID ${entry.etudiantId} non trouvé`);
       }
 
-      let grade = await this.gradeRepository.findOne({
-        where: { coursId: course.id, etudiantId: student.id, anneeAcademique: dto.anneeAcademique, session: dto.session }
-      });
+      let grade = gradeMap.get(student.id);
       let noteFinale = 0;
       if (entry.noteFinale !== undefined && entry.noteFinale !== null) {
         noteFinale = entry.noteFinale;
@@ -263,8 +291,8 @@ export class GradesService {
         grade.notePresence = entry.notePresence || 0;
         grade.noteFinale = noteFinale;
         grade.mention = mention;
-        grade.estPublie = false; // Reset publication status on change
-        grade.estSoumis = false; // Reset submission status on change
+        grade.estPublie = false;
+        grade.estSoumis = false;
         if (professorId) grade.enseignantId = professorId;
       } else {
         grade = this.gradeRepository.create({
@@ -284,7 +312,11 @@ export class GradesService {
         });
       }
 
-      await this.gradeRepository.save(grade);
+      gradesToSave.push(grade);
+    }
+
+    if (gradesToSave.length > 0) {
+      await this.gradeRepository.save(gradesToSave);
     }
 
     return { message: 'Cotes enregistrées avec succès' };
